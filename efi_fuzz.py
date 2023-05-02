@@ -41,9 +41,11 @@ from core.FuzzingManager import FuzzingManager
 # for argparse
 auto_int = functools.partial(int, base=0)
 
+
 def create_emulator(cls, args):
+    print("nvram_file", args.nvram_file)
     emu = cls(args.target, args.extra_modules)
-    
+
     # Load NVRAM environment from the provided Pickle.
     if args.nvram_file:
         emu.load_nvram(args.nvram_file)
@@ -61,7 +63,7 @@ def create_emulator(cls, args):
         emu.coverage_file = args.coverage_file
 
     # Initialize SMRAM and some SMM-related protocols.
-    emu.enable_smm()
+    #emu.enable_smm()
 
     # Enable sanitizers.
     if args.sanitize:
@@ -74,13 +76,16 @@ def create_emulator(cls, args):
     emu.apply(args.json_conf)
     return emu
 
+
 def run(args):
     emu = create_emulator(EmulationManager, args)
     emu.run(args.end, args.timeout)
 
+
 def fuzz(args):
     emu = create_emulator(FuzzingManager, args)
     emu.fuzz(args.end, args.timeout, varname=args.varname, infile=args.infile)
+
 
 def main(args):
     if args.command == 'run':
@@ -90,30 +95,44 @@ def main(args):
 
     os._exit(0)  # that's a looot faster than tidying up.
 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     # Positional arguments
-    parser.add_argument("command", help="What should I do?", choices=['run', 'fuzz'])
+    parser.add_argument("command", help="What should I do?",
+                        choices=['run', 'fuzz'])
     parser.add_argument("target", help="Path to the target binary to fuzz")
 
     # Optional arguments
-    parser.add_argument("-c", "--coverage-file", help="Path to code coverage file")
-    parser.add_argument("-f", "--fault-handler", help="What to do when encountering a fault?", choices=['crash', 'stop', 'ignore', 'break'])
-    parser.add_argument("-e", "--end", help="End address for emulation", type=auto_int)
-    parser.add_argument("-t", "--timeout", help="Emulation timeout in ms", type=int, default=60*100000)
-    parser.add_argument("-o", "--output", help="Trace execution for debugging purposes", choices=['trace', 'disasm', 'debug', 'dump', 'off'])
-    parser.add_argument("-s", "--sanitize", help="Enable memory sanitizer", choices=sanitizers.get_available_sanitizers().keys(), nargs='+')
-    parser.add_argument("-j", "--json-conf", help="Specify a JSON file to further customize the environment")
-    parser.add_argument("-v", "--nvram-file", help="Pickled dictionary containing the NVRAM environment variables")
+    parser.add_argument("-c", "--coverage-file",
+                        help="Path to code coverage file")
+    parser.add_argument("-f", "--fault-handler", help="What to do when encountering a fault?",
+                        choices=['crash', 'stop', 'ignore', 'break'])
+    parser.add_argument(
+        "-e", "--end", help="End address for emulation", type=auto_int)
+    parser.add_argument(
+        "-t", "--timeout", help="Emulation timeout in ms", type=int, default=60*100000)
+    parser.add_argument("-o", "--output", help="Trace execution for debugging purposes",
+                        choices=['trace', 'disasm', 'debug', 'dump', 'off'])
+    parser.add_argument("-s", "--sanitize", help="Enable memory sanitizer",
+                        choices=sanitizers.get_available_sanitizers().keys(), nargs='+')
+    parser.add_argument(
+        "-j", "--json-conf", help="Specify a JSON file to further customize the environment")
+    parser.add_argument(
+        "-v", "--nvram-file", help="Pickled dictionary containing the NVRAM environment variables")
     parser.add_argument("-r", "--rom-file", help="Path to the UEFI ROM file")
-    parser.add_argument("-x", "--extra-modules", help="Extra modules to load", nargs='+')
+    parser.add_argument("-x", "--extra-modules",
+                        help="Extra modules to load", nargs='+')
 
     subparsers = parser.add_subparsers(help="Fuzzing modes", dest="mode")
 
     # NVRAM sub-command
-    nvram_subparser = subparsers.add_parser("nvram", help="Fuzz contents of NVRAM variables")
-    nvram_subparser.add_argument("varname", help="Name of the NVRAM variable to mutate")
-    nvram_subparser.add_argument("infile", help="Mutated input buffer. Set to @@ when running under afl-fuzz")
-    
+    nvram_subparser = subparsers.add_parser(
+        "nvram", help="Fuzz contents of NVRAM variables")
+    nvram_subparser.add_argument(
+        "varname", help="Name of the NVRAM variable to mutate")
+    nvram_subparser.add_argument(
+        "infile", help="Mutated input buffer. Set to @@ when running under afl-fuzz")
+
     main(parser.parse_args())

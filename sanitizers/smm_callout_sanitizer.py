@@ -62,5 +62,6 @@ class smm_callout_sanitizer(base_sanitizer):
             smm_callout_sanitizer._activate_smm_sanitizer(ql)
 
     def enable(self):
-        self.ql.os.after_module_execution_callbacks.insert(0, smm_callout_sanitizer._after_module_execution_callback)
+        pass
+        #self.ql.os.after_module_execution_callbacks.insert(0, smm_callout_sanitizer._after_module_execution_callback)
 

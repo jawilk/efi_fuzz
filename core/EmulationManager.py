@@ -17,7 +17,7 @@ from conditional import conditional
 
 class EmulationManager:
 
-    DEFAULT_SANITIZERS = ['smm_callout', 'smm', 'uninitialized'] # @TODO: add 'memory' sanitizer as default
+    DEFAULT_SANITIZERS = ['memory']#['smm_callout', 'smm', 'uninitialized'] # @TODO: add 'memory' sanitizer as default
 
     def __init__(self, target_module, extra_modules=None):
 
@@ -25,10 +25,10 @@ class EmulationManager:
             extra_modules = []
 
         self.ql = Qiling(extra_modules + [target_module],
-                         ".",                                        # rootfs
-                         output="trace")
+                         ".")#,                                      # rootfs
+                         #output="trace")
 
-        callbacks.init_callbacks(self.ql)
+        #callbacks.init_callbacks(self.ql)
 
         self.coverage_file = None
         
@@ -113,8 +113,8 @@ class EmulationManager:
 
     def run(self, end=None, timeout=0, **kwargs):
 
-        if end:
-            end = callbacks.set_end_of_execution_callback(self.ql, end)
+        #if end:
+         #   end = callbacks.set_end_of_execution_callback(self.ql, end)
 
         self._enable_sanitizers()
 

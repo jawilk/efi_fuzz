@@ -81,12 +81,12 @@ class uninitialized_memory_tainter(base_tainter):
     def enable(self):
         super().enable()
 
-        self.ql.set_api("SetMem", SetMem_propagate_taint, QL_INTERCEPT.EXIT)
-        self.ql.set_api("CopyMem", CopyMem_propagate_taint, QL_INTERCEPT.EXIT)
-        self.ql.set_api("SetVariable", SetVariable_propagate_taint, QL_INTERCEPT.EXIT)
-        self.ql.set_api("GetVariable", GetVariable_propagate_taint, QL_INTERCEPT.EXIT)
-        self.ql.set_api("AllocatePool", AllocatePool_propagate_taint, QL_INTERCEPT.EXIT)
-        self.ql.set_api("SmmAllocatePages", SmmAllocatePages_propagate_taint, QL_INTERCEPT.EXIT)
+        self.ql.os.set_api("SetMem", SetMem_propagate_taint, QL_INTERCEPT.EXIT)
+        self.ql.os.set_api("CopyMem", CopyMem_propagate_taint, QL_INTERCEPT.EXIT)
+        self.ql.os.set_api("SetVariable", SetVariable_propagate_taint, QL_INTERCEPT.EXIT)
+        self.ql.os.set_api("GetVariable", GetVariable_propagate_taint, QL_INTERCEPT.EXIT)
+        self.ql.os.set_api("AllocatePool", AllocatePool_propagate_taint, QL_INTERCEPT.EXIT)
+        self.ql.os.set_api("SmmAllocatePages", SmmAllocatePages_propagate_taint, QL_INTERCEPT.EXIT)
 
     @staticmethod
     def is_stack_pointer_decrement(inst):
@@ -112,4 +112,4 @@ class uninitialized_memory_tainter(base_tainter):
         (should_taint, decrement) = self.is_stack_pointer_decrement(instruction)
         if should_taint:
             # Taint all stack memory from current rsp to new rsp.
-            self.set_taint_range(ql.reg.arch_sp - decrement, ql.reg.arch_sp, True)
+            self.set_taint_range(ql.arch.regs.arch_sp - decrement, ql.arch.regs.arch_sp, True)

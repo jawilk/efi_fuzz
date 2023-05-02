@@ -38,5 +38,5 @@ def init_GetCapabilities(ql):
     efi_mmram_descriptor.saveTo(ql, ql.os.get_capabilities_info)
     
 
-    ql.set_api("GetCapabilities", hook_GetCapabilities)
+    ql.os.set_api("GetCapabilities", hook_GetCapabilities)
 

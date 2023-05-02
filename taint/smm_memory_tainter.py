@@ -15,7 +15,7 @@ class smm_memory_tainter(base_tainter):
     def enable(self):
         super().enable()
 
-        self.ql.set_api("SmmReadSaveState", ReadSaveState_propagate_taint, QL_INTERCEPT.EXIT)
+        self.ql.os.set_api("SmmReadSaveState", ReadSaveState_propagate_taint, QL_INTERCEPT.EXIT)
 
     @staticmethod
     def compute_effective_address(ql, operand):
@@ -23,17 +23,18 @@ class smm_memory_tainter(base_tainter):
         assert operand.type == capstone.CS_OP_MEM
         assert operand.access & capstone.CS_AC_WRITE
 
-        base = ql.reg.read(ql.reg.reverse_mapping[operand.mem.base])
+        base = ql.arch.regs.read(operand.mem.base)
 
         if operand.mem.index == 0:
             index = 0
         else:
-            index = ql.reg.read(ql.reg.reverse_mapping[operand.mem.index])
+            index = ql.arch.regs.read(operand.mem.index)
         
         # [base + index * scale + disp]
         return base + index * operand.mem.scale + operand.mem.disp
 
     def instruction_hook(self, ql, instruction):
+        '''
         # Not enough operands
         if len(instruction.operands) < 1:
             return
@@ -52,7 +53,7 @@ class smm_memory_tainter(base_tainter):
         # If we got here, it means a write to SMRAM has occured.
         # Check if the base register is tainted, which means an attacker can control the memory
         # address being written.
-        base_reg = ql.reg.reverse_mapping[destination.mem.base]
+        base_reg = ql.arch.regs.read(destination.mem.base)
         triton_base_reg = getattr(self.triton_ctx.registers, base_reg)
         if self.triton_ctx.isRegisterTainted(triton_base_reg):
             ql.log.error("***")
@@ -61,4 +62,4 @@ class smm_memory_tainter(base_tainter):
             ql.log.error("***")
             ql.os.emu_error()
             ql.os.fault_handler()
-            
+        '''

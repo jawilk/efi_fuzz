@@ -10,7 +10,7 @@ class memory_sanitizer(base_sanitizer):
 
     def __init__(self, ql):
         super().__init__(ql)
-        self.assembler = ql.create_assembler()
+        self.assembler = ql.arch.assembler
 
     def _enable_sanitized_CopyMem(self):
         """
@@ -38,7 +38,7 @@ class memory_sanitizer(base_sanitizer):
             ql.os.exec_arbitrary(ptr, ptr+len(runcode))
             return 0
 
-        self.ql.set_api("CopyMem", my_CopyMem)
+        self.ql.os.set_api("CopyMem", my_CopyMem)
 
     def _enable_sanitized_SetMem(self):
         """
@@ -64,7 +64,7 @@ class memory_sanitizer(base_sanitizer):
             ql.os.exec_arbitrary(ptr, ptr+len(runcode))
             return 0
 
-        self.ql.set_api("SetMem", my_SetMem)
+        self.ql.os.set_api("SetMem", my_SetMem)
 
     def _enable_sanitized_heap(self, fault_rate=0):
         """

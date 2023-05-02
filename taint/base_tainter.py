@@ -1,7 +1,11 @@
+import site
+site.addsitedir('/usr/lib/python3.8/site-packages')
 import triton
 from abc import ABC, abstractmethod
 from sanitizers.base_sanitizer import base_sanitizer
 import taint.tracker
+
+
 class base_tainter(base_sanitizer):
 
     def __init__(self, ql):
@@ -11,7 +15,8 @@ class base_tainter(base_sanitizer):
         self.triton_ctx = triton.TritonContext()
         self.triton_ctx.setArchitecture(triton.ARCH.X86_64)
         self.triton_ctx.setMode(triton.MODE.ALIGNED_MEMORY, True)
-        self.triton_ctx.setAstRepresentationMode(triton.AST_REPRESENTATION.PYTHON)
+        self.triton_ctx.setAstRepresentationMode(
+            triton.AST_REPRESENTATION.PYTHON)
 
     def enable(self):
         if not hasattr(self.ql, 'tainters'):
@@ -23,26 +28,46 @@ class base_tainter(base_sanitizer):
     def sync(self, ql):
         from unicorn.x86_const import UC_X86_REG_EFLAGS
 
-        self.triton_ctx.setConcreteRegisterValue(self.triton_ctx.registers.rax, ql.reg.rax)
-        self.triton_ctx.setConcreteRegisterValue(self.triton_ctx.registers.rbx, ql.reg.rbx)
-        self.triton_ctx.setConcreteRegisterValue(self.triton_ctx.registers.rcx, ql.reg.rcx)
-        self.triton_ctx.setConcreteRegisterValue(self.triton_ctx.registers.rdx, ql.reg.rdx)
-        self.triton_ctx.setConcreteRegisterValue(self.triton_ctx.registers.rdi, ql.reg.rdi)
-        self.triton_ctx.setConcreteRegisterValue(self.triton_ctx.registers.rsi, ql.reg.rsi)
-        self.triton_ctx.setConcreteRegisterValue(self.triton_ctx.registers.rbp, ql.reg.rbp)
-        self.triton_ctx.setConcreteRegisterValue(self.triton_ctx.registers.rsp, ql.reg.rsp)
-        self.triton_ctx.setConcreteRegisterValue(self.triton_ctx.registers.rip, ql.reg.rip)
-        self.triton_ctx.setConcreteRegisterValue(self.triton_ctx.registers.r8, ql.reg.r8)
-        self.triton_ctx.setConcreteRegisterValue(self.triton_ctx.registers.r9, ql.reg.r9)
-        self.triton_ctx.setConcreteRegisterValue(self.triton_ctx.registers.r10, ql.reg.r10)
-        self.triton_ctx.setConcreteRegisterValue(self.triton_ctx.registers.r11, ql.reg.r11)
-        self.triton_ctx.setConcreteRegisterValue(self.triton_ctx.registers.r12, ql.reg.r12)
-        self.triton_ctx.setConcreteRegisterValue(self.triton_ctx.registers.r13, ql.reg.r13)
-        self.triton_ctx.setConcreteRegisterValue(self.triton_ctx.registers.r14, ql.reg.r14)
-        self.triton_ctx.setConcreteRegisterValue(self.triton_ctx.registers.r15, ql.reg.r15)
-        self.triton_ctx.setConcreteRegisterValue(self.triton_ctx.registers.eflags, ql.reg.read(UC_X86_REG_EFLAGS))
-        self.triton_ctx.setConcreteRegisterValue(self.triton_ctx.registers.fs, ql.reg.fs)
-        self.triton_ctx.setConcreteRegisterValue(self.triton_ctx.registers.gs, ql.reg.gs)
+        self.triton_ctx.setConcreteRegisterValue(
+            self.triton_ctx.registers.rax, ql.arch.regs.rax)
+        self.triton_ctx.setConcreteRegisterValue(
+            self.triton_ctx.registers.rbx, ql.arch.regs.rbx)
+        self.triton_ctx.setConcreteRegisterValue(
+            self.triton_ctx.registers.rcx, ql.arch.regs.rcx)
+        self.triton_ctx.setConcreteRegisterValue(
+            self.triton_ctx.registers.rdx, ql.arch.regs.rdx)
+        self.triton_ctx.setConcreteRegisterValue(
+            self.triton_ctx.registers.rdi, ql.arch.regs.rdi)
+        self.triton_ctx.setConcreteRegisterValue(
+            self.triton_ctx.registers.rsi, ql.arch.regs.rsi)
+        self.triton_ctx.setConcreteRegisterValue(
+            self.triton_ctx.registers.rbp, ql.arch.regs.rbp)
+        self.triton_ctx.setConcreteRegisterValue(
+            self.triton_ctx.registers.rsp, ql.arch.regs.rsp)
+        self.triton_ctx.setConcreteRegisterValue(
+            self.triton_ctx.registers.rip, ql.arch.regs.rip)
+        self.triton_ctx.setConcreteRegisterValue(
+            self.triton_ctx.registers.r8, ql.arch.regs.r8)
+        self.triton_ctx.setConcreteRegisterValue(
+            self.triton_ctx.registers.r9, ql.arch.regs.r9)
+        self.triton_ctx.setConcreteRegisterValue(
+            self.triton_ctx.registers.r10, ql.arch.regs.r10)
+        self.triton_ctx.setConcreteRegisterValue(
+            self.triton_ctx.registers.r11, ql.arch.regs.r11)
+        self.triton_ctx.setConcreteRegisterValue(
+            self.triton_ctx.registers.r12, ql.arch.regs.r12)
+        self.triton_ctx.setConcreteRegisterValue(
+            self.triton_ctx.registers.r13, ql.arch.regs.r13)
+        self.triton_ctx.setConcreteRegisterValue(
+            self.triton_ctx.registers.r14, ql.arch.regs.r14)
+        self.triton_ctx.setConcreteRegisterValue(
+            self.triton_ctx.registers.r15, ql.arch.regs.r15)
+        self.triton_ctx.setConcreteRegisterValue(
+            self.triton_ctx.registers.eflags, ql.arch.regs.read(UC_X86_REG_EFLAGS))
+        self.triton_ctx.setConcreteRegisterValue(
+            self.triton_ctx.registers.fs, ql.arch.regs.fs)
+        self.triton_ctx.setConcreteRegisterValue(
+            self.triton_ctx.registers.gs, ql.arch.regs.gs)
 
     @abstractmethod
     def instruction_hook(self, ql, instruction):

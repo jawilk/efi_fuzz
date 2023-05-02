@@ -15,6 +15,7 @@ def start_afl(_ql: Qiling, user_data):
     """
     Callback from inside
     """
+    print("START AFL ***********************")
 
     (varname, infile) = user_data
 
@@ -28,13 +29,14 @@ def start_afl(_ql: Qiling, user_data):
         """
         Informs AFL that a certain condition should be treated as a crash.
         """
+        print("AFL VALIDATE CRASH *******************************")
         if hasattr(_ql.os.heap, "validate"):
             if not _ql.os.heap.validate():
                 # Canary was corrupted.
                 verbose_abort(_ql)
                 return True
 
-        crash = (_ql.internal_exception is not None) or (err.errno != UC_ERR_OK)
+        crash = (_ql.internal_exception is not None) or (err != UC_ERR_OK)
         return crash
 
     # Choose the function to inject the mutated input to the emulation environment,
@@ -43,6 +45,7 @@ def start_afl(_ql: Qiling, user_data):
 
     # We start our AFL forkserver or run once if AFL is not available.
     # This will only return after the fuzzing stopped.
+    print("START AFL BEFORE TRY FUZZ *********************")
     try:
         if not _ql.uc.afl_fuzz(input_file=infile,
                                place_input_callback=place_input_callback,
@@ -76,6 +79,7 @@ class FuzzingManager(EmulationManager):
         self._coverage_file = None
 
     def fuzz(self, end=None, timeout=0, **kwargs):
+        print("AFL FUZZ START *******************************")
         # The last loaded image is the main module we're interested in fuzzing
         target = self.ql.loader.images[-1].path
         pe = pefile.PE(target, fast_load=True)
@@ -85,4 +89,5 @@ class FuzzingManager(EmulationManager):
         # We want AFL's forkserver to spawn new copies starting from the main module's entrypoint.
         self.ql.hook_address(callback=start_afl, address=entry_point, user_data=(kwargs['varname'], kwargs['infile']))
 
+        print("AFL BEFORE QILING RUN **********************")
         super().run(end, timeout)

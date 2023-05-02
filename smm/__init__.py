@@ -83,7 +83,7 @@ def init(ql, in_smm=False):
         write_int64(ql, params["InSmram"], in_smm)
 
     # Replace 'InSmm' to correctly report whether or not we're executing an SMM module.
-    ql.set_api("InSmm", hook_InSmm)
+    ql.os.set_api("InSmm", hook_InSmm)
     ql.os.smm_ready_to_lock_installed = False
     def after_module_execution_callback(ql, number_of_modules_left):
         if number_of_modules_left == 0:
@@ -102,4 +102,4 @@ def init(ql, in_smm=False):
             return trigger_swsmi(ql)
         return False
 
-    ql.os.after_module_execution_callbacks.append(after_module_execution_callback)
+    #ql.os.after_module_execution_callbacks.append(after_module_execution_callback)
