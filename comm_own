@@ -1,0 +1,29 @@
+git clone https://github.com/JonathanSalwan/Triton
+
+python3.9 scripts/prepare_nvram.py rom.bin nvram.pickle
+
+python3.9 scripts/prepare_afl_corpus.py ../../temp/uefi/rom.bin afl_inputs
+
+mkdir afl_inputs
+
+
+import site
+site.addsitedir('/usr/lib/python3.8/site-packages')
+
+qiling:
+ql.set_api() -> ql.os.set_api()
+ql.reg.read() -> ql.arch.regs.read()
+
+PROTOCOLS OF INTEREST:
+EfiS3SaveStateProtocolGuid
+
+
+dry run:
+python3 efi_fuzz.py run ../../temp/uefi/TcgPlatformSetupPolicy.efi -v nvram.pickle nvram Setup afl_inputs/Setup/Setup_0
+
+afl:
+AFL_I_DONT_CARE_ABOUT_MISSING_CRASHES=1 ./run.sh
+
+(rm -rf afl_outputs
+afl-fuzz -i ../../afl_inputs/Setup -o afl_outputs -U -- \
+python3 ../../efi_fuzz.py fuzz ../../../../temp/uefi/TcgPlatformSetupPolicy.efi -v ../../nvram.pickle nvram Setup @@)

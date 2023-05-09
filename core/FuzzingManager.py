@@ -31,12 +31,14 @@ def start_afl(_ql: Qiling, user_data):
         """
         print("AFL VALIDATE CRASH *******************************")
         if hasattr(_ql.os.heap, "validate"):
+            print("AFL IS VALIDATE CRASH *******************************")
             if not _ql.os.heap.validate():
+                print("AFL HEAP INVALID *******************************")
                 # Canary was corrupted.
                 verbose_abort(_ql)
                 return True
 
-        crash = (_ql.internal_exception is not None) or (err != UC_ERR_OK)
+        crash = (_ql.internal_exception is not None) or (err.errno != UC_ERR_OK)
         return crash
 
     # Choose the function to inject the mutated input to the emulation environment,
@@ -62,7 +64,7 @@ class FuzzingManager(EmulationManager):
     
     # Tainting significantly slows down the fuzzing process.
     # Therefore, we won't enable them unless explicitly requested by the user.
-    DEFAULT_SANITIZERS = ['smm_callout'] # @TODO: maybe enable 'memory' sanitizer as well?
+    DEFAULT_SANITIZERS = ['memory']#['smm_callout'] # @TODO: maybe enable 'memory' sanitizer as well?
 
     def __init__(self, target_module, extra_modules=None):
         super().__init__(target_module, extra_modules)
