@@ -110,8 +110,27 @@ class EmulationManager:
             self.ql.os.fault_handler = fault.ignore
         elif value == 'break':
             self.ql.os.fault_handler = fault._break
+            
+    def hi2(self, m):
+        print("ENDHEREEEEEEEEEEEEEEEEEEEEE")
+        #print(hex(self.ql.arch.regs.arch_pc))
+            
+    def hi(self, module):
+        print(self.ql)
+        print("2222HEREEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
+        address_to_call = 0x00100658  # Replace with the desired address to call
+        self.ql.hook_address(address=0x00100877, callback=self.hi2)
+
+        # Set the program counter (PC) register to the desired address
+        self.ql.arch.regs.arch_pc = address_to_call
+
+        # Execute the code at the desired address
+        self.ql.uc.emu_start(address_to_call, timeout=0, count=1)
+        print("3333HEREEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
+        return False
 
     def run(self, end=None, timeout=0, **kwargs):
+        self.ql.os.on_module_exit.append(self.hi)
 
         #if end:
          #   end = callbacks.set_end_of_execution_callback(self.ql, end)

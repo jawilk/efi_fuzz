@@ -87,6 +87,7 @@ class FuzzingManager(EmulationManager):
         pe = pefile.PE(target, fast_load=True)
         image_base = self.ql.loader.images[-1].base
         entry_point = image_base + pe.OPTIONAL_HEADER.AddressOfEntryPoint
+        print("ENTRY*********************************", hex(entry_point))
 
         # We want AFL's forkserver to spawn new copies starting from the main module's entrypoint.
         self.ql.hook_address(callback=start_afl, address=entry_point, user_data=(kwargs['varname'], kwargs['infile']))
