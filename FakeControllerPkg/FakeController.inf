@@ -1,0 +1,22 @@
+[Defines]
+  INF_VERSION                    = 1.25
+  BASE_NAME                      = FakeController
+  FILE_GUID                      = 01234567-89AB-CDEF-0123-456789ABCDEF
+  MODULE_TYPE                    = UEFI_APPLICATION
+  VERSION_STRING                 = 1.0
+  ENTRY_POINT                    = UefiMain
+
+[Sources]
+  FakeController.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+
+[LibraryClasses]
+  UefiApplicationEntryPoint
+  UefiLib
+
+[Protocols]
+  gEfiBlockIoProtocolGuid
+  gEfiDiskIoProtocolGuid
+  gEfiDiskIo2ProtocolGuid

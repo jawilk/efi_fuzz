@@ -15,6 +15,9 @@ import capstone
 from unicorn.x86_const import *
 from conditional import conditional
 
+from qiling.os.const import PARAM_INTN, POINTER
+
+
 class EmulationManager:
 
     DEFAULT_SANITIZERS = ['memory']#['smm_callout', 'smm', 'uninitialized'] # @TODO: add 'memory' sanitizer as default
@@ -113,24 +116,51 @@ class EmulationManager:
             
     def hi2(self, m):
         print("ENDHEREEEEEEEEEEEEEEEEEEEEE")
+        self.ql.os.emit_context()
         #print(hex(self.ql.arch.regs.arch_pc))
+                    
+    def hi3(self, m):
+        print("!!!!!!!!!!!!!!! On call FatOpenDevice")
+                    
+    def hi4(self, m):
+        print("!!!!!!!!!!!!!!! After call FatAllocateVolume")
             
-    def hi(self, module):
-        print(self.ql)
+    def hi(self, a):
+        print(hex(self.ql.arch.regs.arch_pc), a)
         print("2222HEREEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
-        address_to_call = 0x00100658  # Replace with the desired address to call
-        self.ql.hook_address(address=0x00100877, callback=self.hi2)
-
+        if a != 0:
+            return False
+        print(self.ql)
+        print("3333HEREEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
+        address_to_call = 0x00103658  # Replace with the desired address to call
+        self.ql.hook_address(address=0x00103658, callback=self.hi2)
+        
+        # On call FatAllocateVolume
+        self.ql.hook_address(address=0x001041d2, callback=self.hi3)
+        # After call FatAllocateVolume
+        self.ql.hook_address(address=0x001037fa, callback=self.hi4)
+        
         # Set the program counter (PC) register to the desired address
-        self.ql.arch.regs.arch_pc = address_to_call
+        #self.ql.arch.regs.arch_pc = address_to_call
 
         # Execute the code at the desired address
-        self.ql.uc.emu_start(address_to_call, timeout=0, count=1)
-        print("3333HEREEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
+        #self.ql.uc.emu_start(address_to_call, timeout=0, count=1)
+        args = [0x109140, 0x101000]
+        types = (PARAM_INTN, ) * len(args)
+        targs = tuple(zip(types, args))
+        self.ql.os.fcall.call_native(address_to_call, targs, None)
+        print("4444HEREEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
+        return True
+        
+    def entry(self, a):
+        print("MOOOOOOOIN", a)
+        self.ql.os.emit_context()
         return False
 
     def run(self, end=None, timeout=0, **kwargs):
         self.ql.os.on_module_exit.append(self.hi)
+        #self.ql.os.on_module_enter.append(self.entry)
+        #self.ql.hook_address(address=0x100412, callback=self.hi)
 
         #if end:
          #   end = callbacks.set_end_of_execution_callback(self.ql, end)
