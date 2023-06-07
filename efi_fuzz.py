@@ -66,8 +66,8 @@ def create_emulator(cls, args):
     #emu.enable_smm()
 
     # Enable sanitizers.
-    if args.sanitize:
-        emu.sanitizers = args.sanitize
+    #if args.sanitize:
+     #   emu.sanitizers = args.sanitize
 
     # Override default output mode.
     if args.output:

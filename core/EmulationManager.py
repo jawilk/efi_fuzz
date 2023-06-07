@@ -37,7 +37,7 @@ class EmulationManager:
         self.coverage_file = None
 
         self.sanitizers = EmulationManager.DEFAULT_SANITIZERS
-        self.fault_handler = 'exit'
+        self.fault_handler = 'abort'
 
         # Load fat image into the env
         self.load_fat_image(
@@ -151,7 +151,7 @@ class EmulationManager:
         buf_addr = int.from_bytes(buf_addr, 'little')
 
         print("offset:", hex(offset))
-        print("size:", size)
+        print("size:", hex(size))
         print("buf addr:", buf_addr, hex(buf_addr))
         # self.ql.os.emit_stack(12)
         # pc = self.ql.arch.regs.arch_pc
@@ -214,7 +214,7 @@ class EmulationManager:
         # if end:
         #   end = callbacks.set_end_of_execution_callback(self.ql, end)
 
-        self._enable_sanitizers()
+        # self._enable_sanitizers()
 
         try:
             # Don't collect coverage information unless explicitly requested by the user.

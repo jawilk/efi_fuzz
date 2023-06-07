@@ -38,15 +38,20 @@ def start_afl(_ql: Qiling, user_data):
         """
         print("!"*10, "AFL VALIDATE CRASH")
         print(hex(_ql.arch.regs.arch_pc))
-        return False
+
         if hasattr(_ql.os.heap, "validate"):
-            print("!"*10, "AFL IS VALIDATE CRASH")
+            print("!"*10, "AFL IS HEAP VALIDATE CRASH")
             if not _ql.os.heap.validate():
-                print("!"*10, "AFL HEAP INVALID")
+                print("!!"*10, "AFL HEAP INVALID")
                 # Canary was corrupted
                 verbose_abort(_ql)
                 return True
+        else:
+            print("!"*10, "AFL IS NO HEAP VALIDATE CRASH")
 
+        # Our exit hook
+        if _ql.env["END"]:
+            return False
         crash = (_ql.internal_exception is not None) or (
             err.errno != UC_ERR_OK)
         return crash
@@ -55,6 +60,7 @@ def start_afl(_ql: Qiling, user_data):
     place_input_callback = place_input_callback_fat_meta
 
     print("!"*10, "START AFL BEFORE TRY")
+    _ql.env["END"] = False
     try:
         if not _ql.uc.afl_fuzz(input_file=infile,
                                place_input_callback=place_input_callback,
@@ -74,12 +80,12 @@ class FuzzingManager(EmulationManager):
     # Tainting significantly slows down the fuzzing process.
     # Therefore, we won't enable them unless explicitly requested by the user.
     # ['smm_callout'] # @TODO: maybe enable 'memory' sanitizer as well?
-    DEFAULT_SANITIZERS = ['memory']
+    # DEFAULT_SANITIZERS = ['memory']
 
     def __init__(self, target_module, extra_modules=None):
         super().__init__(target_module, extra_modules)
 
-        self.sanitizers = FuzzingManager.DEFAULT_SANITIZERS
+        # self.sanitizers = FuzzingManager.DEFAULT_SANITIZERS
         # By default we prefer to abort to notify AFL of potential crashes.
         self.fault_handler = 'abort'
 
@@ -114,12 +120,17 @@ class FuzzingManager(EmulationManager):
         types = (PARAM_INTN, ) * len(args)
         targs = tuple(zip(types, args))
 
+        self.ql.env["END"] = False
+
         def __cleanup(ql: Qiling):
+            self.ql.env["END"] = True
             # Give afl this address as fuzzing end address
             print("!"*10, "END CLEANUP")
 
         cleanup_trap = self.ql.os.heap.alloc(self.ql.arch.pointersize)
         hret = self.ql.hook_address(__cleanup, cleanup_trap)
+
+        self._enable_sanitizers()
 
         # Call the driver start func and invoke the fuzzer (it's hooked on that address)
         self.ql.os.fcall.call_native(address_to_call, targs, cleanup_trap)
