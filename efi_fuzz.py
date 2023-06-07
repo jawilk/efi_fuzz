@@ -84,7 +84,7 @@ def run(args):
 
 def fuzz(args):
     emu = create_emulator(FuzzingManager, args)
-    emu.fuzz(args.end, args.timeout, varname=args.varname, infile=args.infile)
+    emu.fuzz(args.end, args.timeout, infile=args.infile)
 
 
 def main(args):
@@ -132,6 +132,12 @@ if __name__ == "__main__":
         "nvram", help="Fuzz contents of NVRAM variables")
     nvram_subparser.add_argument(
         "varname", help="Name of the NVRAM variable to mutate")
+    nvram_subparser.add_argument(
+        "infile", help="Mutated input buffer. Set to @@ when running under afl-fuzz")
+        
+    # FAT sub-command
+    nvram_subparser = subparsers.add_parser(
+        "fat", help="Fuzz contents of NVRAM variables")
     nvram_subparser.add_argument(
         "infile", help="Mutated input buffer. Set to @@ when running under afl-fuzz")
 

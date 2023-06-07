@@ -1,6 +1,7 @@
 import pickle
 import rom
 from qiling import Qiling
+from qiling.const import QL_VERBOSE
 from . import callbacks
 import sanitizers
 import smm
@@ -29,7 +30,7 @@ class EmulationManager:
             extra_modules = []
 
         self.ql = Qiling(extra_modules + [target_module],
-                         ".")  # ,                                      # rootfs
+                         ".", verbose=QL_VERBOSE.DEBUG)  # ,                                      # rootfs
         # output="trace")
 
         # callbacks.init_callbacks(self.ql)
@@ -157,6 +158,7 @@ class EmulationManager:
         self.ql.os.emit_disasm(pc, data, 32)
         # print(self.fat_image[:size])
         # bytes([1, 2, 3, 4]))
+        print("data:", self.fat_image[offset:offset+size])
         self.ql.mem.write(buf_addr, self.fat_image[offset:offset+size])
         self.ql.os.emit_stack(12)
         print("HEREEEEEE AFTER STACK WRITE")
@@ -191,10 +193,8 @@ class EmulationManager:
 
         def __cleanup(ql: Qiling):
             # Give afl this address as fuzzing end
-            print("END 4444HEREEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
-        # ql.log.info(f'Leaving SWSMI handler {idx:#04x}')
+            print("END CLEANUP 4444HEREEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
 
-        # hook returning from swsmi handler
         cleanup_trap = self.ql.os.heap.alloc(self.ql.arch.pointersize)
         hret = self.ql.hook_address(__cleanup, cleanup_trap)
         self.ql.os.fcall.call_native(address_to_call, targs, cleanup_trap)
