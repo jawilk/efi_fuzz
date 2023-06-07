@@ -15,12 +15,13 @@ import capstone
 from unicorn.x86_const import *
 from conditional import conditional
 
-from qiling.os.const import PARAM_INTN, POINTER
+from qiling.os.const import PARAM_INTN
 
 
 class EmulationManager:
 
-    DEFAULT_SANITIZERS = ['memory']#['smm_callout', 'smm', 'uninitialized'] # @TODO: add 'memory' sanitizer as default
+    # ['smm_callout', 'smm', 'uninitialized'] # @TODO: add 'memory' sanitizer as default
+    DEFAULT_SANITIZERS = ['memory']
 
     def __init__(self, target_module, extra_modules=None):
 
@@ -28,15 +29,22 @@ class EmulationManager:
             extra_modules = []
 
         self.ql = Qiling(extra_modules + [target_module],
-                         ".")#,                                      # rootfs
-                         #output="trace")
+                         ".")  # ,                                      # rootfs
+        # output="trace")
 
-        #callbacks.init_callbacks(self.ql)
+        # callbacks.init_callbacks(self.ql)
 
         self.coverage_file = None
-        
+
         self.sanitizers = EmulationManager.DEFAULT_SANITIZERS
-        self.fault_handler = 'exit' # By default we prefer to exit the emulation cleanly
+        self.fault_handler = 'exit'  # By default we prefer to exit the emulation cleanly
+        self.fat_image = None
+        self.load_fat_image(
+            "/home/wj/temp/uefi/test-fat/dummy_esp.img")
+
+    def load_fat_image(self, path):
+        with open(path, "rb") as file:
+            self.fat_image = file.read()
 
     def load_nvram(self, nvram_file):
         # Load NVRAM environment.
@@ -54,7 +62,8 @@ class EmulationManager:
             sanitizers.get(sanitizer)(self.ql).enable()
 
     def enable_smm(self):
-        profile = os.path.join(os.path.dirname(__file__), os.path.pardir, 'smm', 'smm.ini')
+        profile = os.path.join(os.path.dirname(
+            __file__), os.path.pardir, 'smm', 'smm.ini')
         self.ql.profile.read(profile)
         # Init SMM related protocols.
         smm.init(self.ql, True)
@@ -73,7 +82,7 @@ class EmulationManager:
 
         with open(json_conf, 'r') as f:
             conf = json.load(f)
-        
+
         # Install protocols
         if conf.get('protocols'):
             for proto in conf['protocols']:
@@ -96,7 +105,7 @@ class EmulationManager:
                     size = self.ql.mem.align(len(data))
                     self.ql.mem.map(page, size)
                 self.ql.mem.write(address, data)
-            
+
     @property
     def fault_handler(self):
         return self._fault_handler
@@ -113,18 +122,45 @@ class EmulationManager:
             self.ql.os.fault_handler = fault.ignore
         elif value == 'break':
             self.ql.os.fault_handler = fault._break
-            
+
     def hi2(self, m):
         print("ENDHEREEEEEEEEEEEEEEEEEEEEE")
         self.ql.os.emit_context()
-        #print(hex(self.ql.arch.regs.arch_pc))
-                    
+        # print(hex(self.ql.arch.regs.arch_pc))
+
     def hi3(self, m):
         print("!!!!!!!!!!!!!!! On call FatOpenDevice")
-                    
+
     def hi4(self, m):
         print("!!!!!!!!!!!!!!! After call FatAllocateVolume")
-            
+
+    def hi5(self, m):
+        # addr start in r8
+        # size param is in r9
+        # &buf pointer is in RSP+0x28
+
+        print("!!!!!!!!!!!!!!! DISK IO READ BLOCKS")
+        offset = self.ql.arch.regs.r8
+        size = self.ql.arch.regs.r9
+        buf_addr = self.ql.mem.read(
+            self.ql.arch.regs.rsp + 0x28, 8)
+        buf_addr = int.from_bytes(buf_addr, 'little')
+        # self.ql.mem.read(self.ql.arch.stack_read(
+        # 5 * self.ql.arch.pointersize), 8)
+        print("offset:", hex(offset))
+        print("size:", size)
+        print("buf addr:", buf_addr, hex(buf_addr))
+        self.ql.os.emit_context()
+        self.ql.os.emit_stack(12)
+        pc = self.ql.arch.regs.arch_pc
+        data = self.ql.mem.read(pc, size=64)
+        self.ql.os.emit_disasm(pc, data, 32)
+        # print(self.fat_image[:size])
+        # bytes([1, 2, 3, 4]))
+        self.ql.mem.write(buf_addr, self.fat_image[offset:offset+size])
+        self.ql.os.emit_stack(12)
+        print("HEREEEEEE AFTER STACK WRITE")
+
     def hi(self, a):
         print(hex(self.ql.arch.regs.arch_pc), a)
         print("2222HEREEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
@@ -132,26 +168,42 @@ class EmulationManager:
             return False
         print(self.ql)
         print("3333HEREEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
-        address_to_call = 0x00103658  # Replace with the desired address to call
-        self.ql.hook_address(address=0x00103658, callback=self.hi2)
-        
+
+        # FatDriverBindingStart
+        address_to_call = 0x00103658
+        self.ql.hook_address(address=address_to_call, callback=self.hi2)
+
         # On call FatAllocateVolume
         self.ql.hook_address(address=0x001041d2, callback=self.hi3)
         # After call FatAllocateVolume
         self.ql.hook_address(address=0x001037fa, callback=self.hi4)
-        
-        # Set the program counter (PC) register to the desired address
-        #self.ql.arch.regs.arch_pc = address_to_call
+        # DiskIo read blocks
+        self.ql.hook_address(address=0x001012a6, callback=self.hi5)
+
+        # Set pc
+        # self.ql.arch.regs.arch_pc = address_to_call
 
         # Execute the code at the desired address
-        #self.ql.uc.emu_start(address_to_call, timeout=0, count=1)
+        # self.ql.uc.emu_start(address_to_call, timeout=0, count=1)
         args = [0x109140, 0x101000]
         types = (PARAM_INTN, ) * len(args)
         targs = tuple(zip(types, args))
-        self.ql.os.fcall.call_native(address_to_call, targs, None)
-        print("4444HEREEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
+
+        def __cleanup(ql: Qiling):
+            # Give afl this address as fuzzing end
+            print("END 4444HEREEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
+        # ql.log.info(f'Leaving SWSMI handler {idx:#04x}')
+
+        # hook returning from swsmi handler
+        cleanup_trap = self.ql.os.heap.alloc(self.ql.arch.pointersize)
+        hret = self.ql.hook_address(__cleanup, cleanup_trap)
+        self.ql.os.fcall.call_native(address_to_call, targs, cleanup_trap)
+        print("END 4444HEREEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
         return True
-        
+
+    def endend(self):
+        print("END 4444HEREEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
+
     def entry(self, a):
         print("MOOOOOOOIN", a)
         self.ql.os.emit_context()
@@ -159,11 +211,11 @@ class EmulationManager:
 
     def run(self, end=None, timeout=0, **kwargs):
         self.ql.os.on_module_exit.append(self.hi)
-        #self.ql.os.on_module_enter.append(self.entry)
-        #self.ql.hook_address(address=0x100412, callback=self.hi)
+        # self.ql.os.on_module_enter.append(self.entry)
+        # self.ql.hook_address(address=0x100412, callback=self.hi)
 
-        #if end:
-         #   end = callbacks.set_end_of_execution_callback(self.ql, end)
+        # if end:
+        #   end = callbacks.set_end_of_execution_callback(self.ql, end)
 
         self._enable_sanitizers()
 
