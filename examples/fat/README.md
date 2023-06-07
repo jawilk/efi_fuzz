@@ -1,0 +1,1 @@
+### Create dummy fat image

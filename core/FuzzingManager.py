@@ -95,7 +95,7 @@ class FuzzingManager(EmulationManager):
         if modules_left != 0:
             return False
 
-        # FatDriverBindingStart
+        # FatDriverBindingStart (from ghidra)
         target = self.ql.loader.images[-1].path
         pe = pefile.PE(target, fast_load=True)
         image_base = self.ql.loader.images[-1].base
@@ -109,6 +109,7 @@ class FuzzingManager(EmulationManager):
         self.ql.hook_address(callback=start_afl, address=address_to_call, user_data=(
             '/blah/dummy_file'))
 
+        # 1st arg is fat driver, 2nd is our FakeController handle
         args = [0x109140, 0x101000]
         types = (PARAM_INTN, ) * len(args)
         targs = tuple(zip(types, args))
