@@ -34,7 +34,7 @@ except ImportError:
 
 from unicorn import *
 import sanitizers
-import taint.tracker
+#import taint.tracker
 from core.EmulationManager import EmulationManager
 from core.FuzzingManager import FuzzingManager
 
