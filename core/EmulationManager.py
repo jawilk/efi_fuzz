@@ -40,8 +40,8 @@ class EmulationManager:
         self.fault_handler = 'abort'
 
         # Load fat image into the env
-        self.load_fat_image(
-            "/home/wj/temp/uefi/test-fat/dummy_esp.img")
+        #self.load_fat_image(
+         #   "/home/wj/temp/uefi/test-fat/dummy_esp.img")
 
     def load_fat_image(self, path):
         with open(path, "rb") as file:
