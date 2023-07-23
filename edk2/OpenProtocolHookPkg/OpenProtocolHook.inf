@@ -1,0 +1,25 @@
+[Defines]
+  INF_VERSION                    = 1.25
+  BASE_NAME                      = OpenProtocolHook
+  FILE_GUID                      = 01234567-89AB-CDEF-0123-456789ABCDFF
+  MODULE_TYPE                    = UEFI_APPLICATION
+  VERSION_STRING                 = 1.0
+  ENTRY_POINT                    = UefiMain
+
+  UEFI_HII_RESOURCE_SECTION      = TRUE
+
+[Sources]
+ OpenProtocolHook.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+
+[LibraryClasses]
+  UefiApplicationEntryPoint
+  UefiLib
+  PrintLib
+
+[Protocols]
+
+[Guids]
+  gFatCallGraph
