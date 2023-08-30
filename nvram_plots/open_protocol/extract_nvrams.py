@@ -58,7 +58,7 @@ for var in vars:
             uuid_format = str(uuid.UUID(bytes=reordered_bytes))
 
             # print(uuid_format.upper())
-            print(GUIDS[uuid_format.upper()])
+            print(GUIDS[uuid_format.upper()], uuid_format.upper())
 
 
 

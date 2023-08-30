@@ -169,6 +169,9 @@ class EmulationManager:
         print("!"*10, "END DISKIO READ BLOCKS")
 
     def setup_driver_binding_start(self, a):
+        return False
+    
+    
         print(hex(self.ql.arch.regs.arch_pc), a)
         print("!"*10, "MODULE END", a)
         if a != 0:
@@ -177,14 +180,16 @@ class EmulationManager:
         print("!"*10, "LAST MODULE")
 
         # FatDriverBindingStart (from ghidra)
-        address_to_call = 0x00103658
+        #address_to_call = 0x00103658
+        
+        address_to_call = 0x00108b49
         self.ql.hook_address(address=address_to_call,
                              callback=self.fat_binding_start)
         # On call FatOpenDevice
-        self.ql.hook_address(address=0x001041d2, callback=self.fat_open_device)
+        #self.ql.hook_address(address=0x001041d2, callback=self.fat_open_device)
         # After call FatAllocateVolume
-        self.ql.hook_address(address=0x001037fa,
-                             callback=self.fat_allocate_volume)
+        #self.ql.hook_address(address=0x001037fa,
+                             #callback=self.fat_allocate_volume)
         # DiskIo read blocks
         self.ql.hook_address(address=0x001012a6,
                              callback=self.disk_io_read_blocks)

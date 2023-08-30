@@ -52,8 +52,12 @@ def start_afl(_ql: Qiling, user_data):
         # Our exit hook
         if _ql.env["END"]:
             return False
+        print(err)
+        print(type(err))
         crash = (_ql.internal_exception is not None) or (
-            err.errno != UC_ERR_OK)
+            err != UC_ERR_OK)
+        print(_ql.internal_exception)
+        print("Crash", crash)
         return crash
 
     # Inject mutated FAT images through this callback
@@ -105,7 +109,10 @@ class FuzzingManager(EmulationManager):
         target = self.ql.loader.images[-1].path
         pe = pefile.PE(target, fast_load=True)
         image_base = self.ql.loader.images[-1].base
+        # Normal
         address_to_call = image_base + 0x658  # 0x00103658
+        # Overflow
+        #address_to_call = 0x00108b49
 
         # DiskIo read blocks
         self.ql.hook_address(address=0x001012a6,
