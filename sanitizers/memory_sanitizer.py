@@ -35,7 +35,8 @@ class memory_sanitizer(base_sanitizer):
         self.ql.mem.write(ptr, bytes(runcode))
 
         def my_CopyMem(ql, address, params):
-            ql.os.exec_arbitrary(ptr, ptr+len(runcode))
+            #ql.os.exec_arbitrary(ptr, ptr+len(runcode))
+            ql.run(ptr, ptr+len(runcode))
             return 0
 
         self.ql.os.set_api("CopyMem", my_CopyMem)
@@ -61,7 +62,8 @@ class memory_sanitizer(base_sanitizer):
         self.ql.mem.write(ptr, bytes(runcode))
 
         def my_SetMem(ql, address, params):
-            ql.os.exec_arbitrary(ptr, ptr+len(runcode))
+            #ql.os.exec_arbitrary(ptr, ptr+len(runcode))
+            ql.run(ptr, ptr+len(runcode))
             return 0
 
         self.ql.os.set_api("SetMem", my_SetMem)
@@ -79,40 +81,43 @@ class memory_sanitizer(base_sanitizer):
         """
 
         def bo_handler(ql, access, addr, size, value):
-            ql.dprint(D_INFO, "***")
-            ql.dprint(D_INFO, f'bo_handler - {access}, {addr}, {size}, {value}')
-            ql.dprint(D_INFO, "***")
-
-            verbose_abort(ql)
+            print("***************************************************")
+            print(f'bo_handler - {access}, {addr}, {size}, {value}')
+            print("***")
+            os.abort()
 
         def oob_handler(ql, access, addr, size, value):
-            ql.dprint(D_INFO, "***")
-            ql.dprint(D_INFO, f'oob_handler - {access}, {addr}, {size}, {value}')
-            ql.dprint(D_INFO, "***")
-
-            verbose_abort(ql)
+            print("***************************************************")
+            print(f'oob_handler - {access}, {addr}, {size}, {value}')
+            print("***")
+            os.abort()
 
         def uaf_handler(ql, access, addr, size, value):
-            ql.dprint(D_INFO, "***")
-            ql.dprint(D_INFO, f'uaf_handler - {access}, {addr}, {size}, {value}')
-            ql.dprint(D_INFO, "***")
-
-            verbose_abort(ql)
+            print("***************************************************")
+            print(f'uaf_handler - {access}, {addr}, {size}, {value}')
+            print("***")
+            os.abort()
 
         def bad_free_handler(ql, addr):
-            ql.dprint(D_INFO, "***")
-            ql.dprint(D_INFO, f'bad_free_handler - {addr}')
-            ql.dprint(D_INFO, "***")
-
-            verbose_abort(ql)
+            print("***************************************************")
+            print(f'bad_free_handler - {addr}')
+            print("***")
+            os.abort()
 
         self.ql.os.heap = QlSanitizedMemoryHeap(self.ql, self.ql.os.heap, fault_rate=fault_rate)
+        self.ql.loader.dxe_context.heap = self.ql.os.heap
         self.ql.os.heap.oob_handler = oob_handler
         self.ql.os.heap.bo_handler = bo_handler
         self.ql.os.heap.bad_free_handler = bad_free_handler
         self.ql.os.heap.uaf_handler = uaf_handler
+        
+        # make sure future allocated buffers are not too close to UEFI data
+        self.ql.os.heap.alloc(0x1000)
+        
+        print("HEAP SANITIZER ENABLED")
 
     def enable(self):
+        print("MEMORY SANITIZER ENABLED")
         self._enable_sanitized_CopyMem()
         self._enable_sanitized_SetMem()
         self._enable_sanitized_heap()

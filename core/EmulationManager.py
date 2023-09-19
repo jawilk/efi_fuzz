@@ -51,6 +51,11 @@ class EmulationManager:
         # Load NVRAM environment.
         with open(nvram_file, 'rb') as nvram:
             self.ql.env.update(pickle.load(nvram))
+            # self.ql.env['FaultType'] = b'\x0e'
+            a = self.ql.env['FaultType']
+            v = int.from_bytes(a, byteorder='big', signed=False)
+            print("VALUE:", v)
+
 
     def load_rom(self, rom_file):
         # Init firmware volumes from the provided ROM file.
@@ -167,11 +172,36 @@ class EmulationManager:
             buf_addr, self.ql.env["FAT_META"][offset:offset+size])
 
         print("!"*10, "END DISKIO READ BLOCKS")
+        
+    def usb_bus_binding_start(self, m):
+        print("!"*10, "USB DRIVER BINDING START")
+        self.ql.os.emit_context()
+        # print(hex(self.ql.arch.regs.arch_pc))
 
     def setup_driver_binding_start(self, a):
-        return False
+        print("!"*10, "setup_driver_binding_start")
+        
+        # UsbBus UsbBusControllerDriverStart
+        address_to_call = 0x0010452d
+        self.ql.hook_address(address=address_to_call,
+                             callback=self.usb_bus_binding_start)
+        
+        # 1st arg is fat driver, 2nd is our FakeController handle
+        args = [0x109140, 0x101000]
+        types = (PARAM_INTN, ) * len(args)
+        targs = tuple(zip(types, args))
+
+        def __cleanup(ql: Qiling):
+            # Give afl this func's address as fuzzing end
+            print("!" * 10, "END CLEANUP")
+
+        cleanup_trap = self.ql.os.heap.alloc(self.ql.arch.pointersize)
+        hret = self.ql.hook_address(__cleanup, cleanup_trap)
+        self.ql.os.fcall.call_native(address_to_call, targs, cleanup_trap)
+        
+        return True
     
-    
+        '''
         print(hex(self.ql.arch.regs.arch_pc), a)
         print("!"*10, "MODULE END", a)
         if a != 0:
@@ -210,20 +240,25 @@ class EmulationManager:
         hret = self.ql.hook_address(__cleanup, cleanup_trap)
         self.ql.os.fcall.call_native(address_to_call, targs, cleanup_trap)
         return True
+        '''
 
     def run(self, end=None, timeout=0, mode='normal', **kwargs):
-        if mode == 'normal':
-            self.ql.os.on_module_exit.append(self.setup_driver_binding_start)
+        # if mode == 'normal':
+            # self.ql.os.on_module_exit.append(self.setup_driver_binding_start)
 
         # self.ql.os.on_module_enter.append(self.entry)
-        # if end:
-        #   end = callbacks.set_end_of_execution_callback(self.ql, end)
+        if end:
+            end = callbacks.set_end_of_execution_callback(self.ql, end)
 
-        # self._enable_sanitizers()
+        self._enable_sanitizers()
 
-        try:
+        # try:
             # Don't collect coverage information unless explicitly requested by the user.
-            with conditional(self.coverage_file, cov_utils.collect_coverage(self.ql, 'drcov_exact', self.coverage_file)):
-                self.ql.run(end=end, timeout=timeout)
-        except fault.ExitEmulation:
-            pass
+        with conditional(self.coverage_file, cov_utils.collect_coverage(self.ql, 'drcov_exact', self.coverage_file)):
+            self.ql.run(end=end, timeout=timeout)
+        # except fault.ExitEmulation:
+            # pass
+
+        print("HEREEE")
+        print("validated:", self.ql.os.heap.validate())
+        print(self.ql.os.heap)

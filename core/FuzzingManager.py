@@ -1,4 +1,10 @@
 # Make sure Qiling uses our patched Unicorn instead of it's own.
+from unicorn.x86_const import UC_X86_INS_CPUID, UC_X86_INS_RDMSR
+import unicornafl
+unicornafl.monkeypatch()
+
+from unicorn import *
+
 from qiling.os.const import PARAM_INTN
 from qiling.extensions.coverage import utils as cov_utils
 import core.fault
@@ -6,12 +12,8 @@ import os
 from qiling import Qiling
 from core.EmulationManager import EmulationManager
 import pefile
-from unicorn import *
-from unicorn.x86_const import UC_X86_INS_CPUID, UC_X86_INS_RDMSR
-import unicornafl
 from conditional import conditional
 from . import fault
-unicornafl.monkeypatch()
 
 
 def start_afl(_ql: Qiling, user_data):
@@ -20,24 +22,24 @@ def start_afl(_ql: Qiling, user_data):
     """
     print("!"*10, "START AFL")
 
-    # (varname, infile) = user_data
-    infile = user_data
+    (varname, infile) = user_data
+    # infile = user_data
 
-    # def place_input_callback_nvram(uc, _input, _, data):
+    def place_input_callback_nvram(uc, _input, _, data):
     # """
     # Injects the mutated variable to the emulated NVRAM environment.
     # """
-    # _ql.env[varname] = _input
+        _ql.env[varname] = _input
 
-    def place_input_callback_fat_meta(uc, _input, _, data):
-        _ql.env["FAT_META"] = _input.raw
+    # def place_input_callback_fat_meta(uc, _input, _, data):
+        # _ql.env["FAT_META"] = _input.raw
 
     def validate_crash(uc, err, _input, persistent_round, user_data):
         """
         Informs AFL that a certain condition should be treated as a crash.
         """
         print("!"*10, "AFL VALIDATE CRASH")
-        print(hex(_ql.arch.regs.arch_pc))
+        # print(hex(_ql.arch.regs.arch_pc))
 
         if hasattr(_ql.os.heap, "validate"):
             print("!"*10, "AFL IS HEAP VALIDATE CRASH")
@@ -50,8 +52,8 @@ def start_afl(_ql: Qiling, user_data):
             print("!"*10, "AFL IS NO HEAP VALIDATE CRASH")
 
         # Our exit hook
-        if _ql.env["END"]:
-            return False
+        # if _ql.env["END"]:
+            # return False
         print(err)
         print(type(err))
         crash = (_ql.internal_exception is not None) or (
@@ -61,10 +63,10 @@ def start_afl(_ql: Qiling, user_data):
         return crash
 
     # Inject mutated FAT images through this callback
-    place_input_callback = place_input_callback_fat_meta
+    place_input_callback = place_input_callback_nvram
 
     print("!"*10, "START AFL BEFORE TRY")
-    _ql.env["END"] = False
+    # _ql.env["END"] = False
     try:
         if not _ql.uc.afl_fuzz(input_file=infile,
                                place_input_callback=place_input_callback,
@@ -147,7 +149,17 @@ class FuzzingManager(EmulationManager):
     def fuzz(self, end=None, timeout=0, **kwargs):
         print("*"*10, "AFL FUZZ START")
 
-        self.ql.os.on_module_exit.append(self.setup_fuzz_target)
+        # self.ql.os.on_module_exit.append(self.setup_fuzz_target)
 
         # Invoke all module entrypoints, the fuzzer will be started after the last module's entrypoint returns (through the `on_module_exit` hook above)
-        self.run(end, timeout, 'fuzz')
+        # self.run(end, timeout, 'fuzz')
+
+        target = self.ql.loader.images[-1].path
+        pe = pefile.PE(target, fast_load=True)
+        image_base = self.ql.loader.images[-1].base
+        entry_point = image_base + pe.OPTIONAL_HEADER.AddressOfEntryPoint
+
+        # We want AFL's forkserver to spawn new copies starting from the main module's entrypoint.
+        self.ql.hook_address(callback=start_afl, address=entry_point, user_data=(kwargs['varname'], kwargs['infile']))
+
+        super().run(end, timeout)
