@@ -57,7 +57,7 @@ def start_afl(_ql: Qiling, user_data):
         if _ql.env["END"]:
             return False
         print(err)
-        return False
+        return bool(err)
         crash = (_ql.internal_exception is not None) or (
             err != UC_ERR_OK)
         print(_ql.internal_exception)
