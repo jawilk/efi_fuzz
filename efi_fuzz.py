@@ -84,8 +84,10 @@ def run(args):
 
 def fuzz(args):
     emu = create_emulator(FuzzingManager, args)
-    # emu.fuzz(args.end, args.timeout, infile=args.infile)
-    emu.fuzz(args.end, args.timeout, varname=args.varname, infile=args.infile)
+    # Fat
+    emu.fuzz(args.end, args.timeout, infile=args.infile)
+    # NVRAM/UEFIFault
+    #emu.fuzz(args.end, args.timeout, varname=args.varname, infile=args.infile)
 
 
 def main(args):

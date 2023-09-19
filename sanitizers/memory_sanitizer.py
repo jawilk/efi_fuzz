@@ -104,15 +104,17 @@ class memory_sanitizer(base_sanitizer):
             print("***")
             os.abort()
 
-        self.ql.os.heap = QlSanitizedMemoryHeap(self.ql, self.ql.os.heap, fault_rate=fault_rate)
-        self.ql.loader.dxe_context.heap = self.ql.os.heap
-        self.ql.os.heap.oob_handler = oob_handler
-        self.ql.os.heap.bo_handler = bo_handler
-        self.ql.os.heap.bad_free_handler = bad_free_handler
-        self.ql.os.heap.uaf_handler = uaf_handler
+        heap = QlSanitizedMemoryHeap(self.ql, self.ql.os.heap, fault_rate=fault_rate)
+        heap.oob_handler = oob_handler
+        heap.bo_handler = bo_handler
+        heap.bad_free_handler = bad_free_handler
+        heap.uaf_handler = uaf_handler
         
         # make sure future allocated buffers are not too close to UEFI data
-        self.ql.os.heap.alloc(0x1000)
+        heap.alloc(0x1000)
+        
+        self.ql.os.heap = heap
+        self.ql.loader.dxe_context.heap = heap
         
         print("HEAP SANITIZER ENABLED")
 

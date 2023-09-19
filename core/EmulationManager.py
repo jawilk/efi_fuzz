@@ -52,9 +52,9 @@ class EmulationManager:
         with open(nvram_file, 'rb') as nvram:
             self.ql.env.update(pickle.load(nvram))
             # self.ql.env['FaultType'] = b'\x0e'
-            a = self.ql.env['FaultType']
-            v = int.from_bytes(a, byteorder='big', signed=False)
-            print("VALUE:", v)
+            # a = self.ql.env['FaultType']
+            # v = int.from_bytes(a, byteorder='big', signed=False)
+            # print("VALUE:", v)
 
 
     def load_rom(self, rom_file):
@@ -259,6 +259,5 @@ class EmulationManager:
         # except fault.ExitEmulation:
             # pass
 
-        print("HEREEE")
-        print("validated:", self.ql.os.heap.validate())
-        print(self.ql.os.heap)
+        print("EMU END run")
+        print(mode)

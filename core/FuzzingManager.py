@@ -22,8 +22,10 @@ def start_afl(_ql: Qiling, user_data):
     """
     print("!"*10, "START AFL")
 
-    (varname, infile) = user_data
-    # infile = user_data
+    # NVRAM/UEFIFault
+    #(varname, infile) = user_data
+    # Fat
+    infile = user_data
 
     def place_input_callback_nvram(uc, _input, _, data):
     # """
@@ -31,8 +33,8 @@ def start_afl(_ql: Qiling, user_data):
     # """
         _ql.env[varname] = _input
 
-    # def place_input_callback_fat_meta(uc, _input, _, data):
-        # _ql.env["FAT_META"] = _input.raw
+    def place_input_callback_fat_meta(uc, _input, _, data):
+        _ql.env["FAT_META"] = _input.raw
 
     def validate_crash(uc, err, _input, persistent_round, user_data):
         """
@@ -52,10 +54,10 @@ def start_afl(_ql: Qiling, user_data):
             print("!"*10, "AFL IS NO HEAP VALIDATE CRASH")
 
         # Our exit hook
-        # if _ql.env["END"]:
-            # return False
+        if _ql.env["END"]:
+            return False
         print(err)
-        print(type(err))
+        return False
         crash = (_ql.internal_exception is not None) or (
             err != UC_ERR_OK)
         print(_ql.internal_exception)
@@ -63,7 +65,9 @@ def start_afl(_ql: Qiling, user_data):
         return crash
 
     # Inject mutated FAT images through this callback
-    place_input_callback = place_input_callback_nvram
+    #place_input_callback = place_input_callback_nvram
+       
+    place_input_callback = place_input_callback_fat_meta
 
     print("!"*10, "START AFL BEFORE TRY")
     # _ql.env["END"] = False
@@ -149,17 +153,19 @@ class FuzzingManager(EmulationManager):
     def fuzz(self, end=None, timeout=0, **kwargs):
         print("*"*10, "AFL FUZZ START")
 
-        # self.ql.os.on_module_exit.append(self.setup_fuzz_target)
+	# Fat
+        self.ql.os.on_module_exit.append(self.setup_fuzz_target)
 
         # Invoke all module entrypoints, the fuzzer will be started after the last module's entrypoint returns (through the `on_module_exit` hook above)
-        # self.run(end, timeout, 'fuzz')
+        self.run(end, timeout, 'fuzz')
 
-        target = self.ql.loader.images[-1].path
-        pe = pefile.PE(target, fast_load=True)
-        image_base = self.ql.loader.images[-1].base
-        entry_point = image_base + pe.OPTIONAL_HEADER.AddressOfEntryPoint
+	# NVRAM/UEFIFault
+        #target = self.ql.loader.images[-1].path
+        #pe = pefile.PE(target, fast_load=True)
+        #image_base = self.ql.loader.images[-1].base
+        #entry_point = image_base + pe.OPTIONAL_HEADER.AddressOfEntryPoint
 
         # We want AFL's forkserver to spawn new copies starting from the main module's entrypoint.
-        self.ql.hook_address(callback=start_afl, address=entry_point, user_data=(kwargs['varname'], kwargs['infile']))
+        #self.ql.hook_address(callback=start_afl, address=entry_point, user_data=(kwargs['varname'], kwargs['infile']))
 
-        super().run(end, timeout)
+        #super().run(end, timeout)
