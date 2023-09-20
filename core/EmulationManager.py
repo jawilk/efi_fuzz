@@ -8,6 +8,8 @@ import smm
 from qiling.extensions.coverage import utils as cov_utils
 import json
 import dummy_protocol
+import UsbIoProtocol
+import DevicePathProtocol
 from . import fault
 import os
 import binascii
@@ -15,6 +17,7 @@ from qiling.os.uefi.ProcessorBind import STRUCT, PAGE_SIZE
 import capstone
 from unicorn.x86_const import *
 from conditional import conditional
+import random
 
 from qiling.os.const import PARAM_INTN
 
@@ -38,7 +41,15 @@ class EmulationManager:
 
         self.sanitizers = EmulationManager.DEFAULT_SANITIZERS
         self.fault_handler = 'abort'
-
+        
+        descriptor = UsbIoProtocol.descriptor
+        self.ql.loader.dxe_context.install_protocol(descriptor, 1)
+        
+        descriptor = DevicePathProtocol.descriptor
+        self.ql.loader.dxe_context.install_protocol(descriptor, 1)
+        
+        self.ql.env["USB_META"] = bytes([random.randint(0, 5) for _ in range(25)])
+        
         # Load fat image into the env
         #self.load_fat_image(
          #   "/home/wj/temp/uefi/test-fat/dummy_esp.img")
@@ -175,19 +186,23 @@ class EmulationManager:
         
     def usb_bus_binding_start(self, m):
         print("!"*10, "USB DRIVER BINDING START")
-        self.ql.os.emit_context()
+        #self.ql.os.emit_context()
         # print(hex(self.ql.arch.regs.arch_pc))
 
     def setup_driver_binding_start(self, a):
         print("!"*10, "setup_driver_binding_start")
         
         # UsbBus UsbBusControllerDriverStart
-        address_to_call = 0x0010452d
+        image_base = self.ql.loader.images[-1].base
+        address_to_call = image_base + 0x21e7  # 0x800021e7
+        print("ADDRESS: *****************", hex(address_to_call))
         self.ql.hook_address(address=address_to_call,
                              callback=self.usb_bus_binding_start)
         
         # 1st arg is fat driver, 2nd is our FakeController handle
-        args = [0x109140, 0x101000]
+        #args = [0x109140, 0x101000]
+        # UsbMouse
+        args = [0x102a3e, 0x1]
         types = (PARAM_INTN, ) * len(args)
         targs = tuple(zip(types, args))
 
@@ -243,8 +258,8 @@ class EmulationManager:
         '''
 
     def run(self, end=None, timeout=0, mode='normal', **kwargs):
-        # if mode == 'normal':
-            # self.ql.os.on_module_exit.append(self.setup_driver_binding_start)
+        if mode == 'normal':
+            self.ql.os.on_module_exit.append(self.setup_driver_binding_start)
 
         # self.ql.os.on_module_enter.append(self.entry)
         if end:
