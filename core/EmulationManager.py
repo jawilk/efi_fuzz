@@ -192,7 +192,8 @@ class EmulationManager:
     def setup_driver_binding_start(self, a):
         print("!"*10, "setup_driver_binding_start")
         
-        hex_data = "610100006161fa0040fa496161610a6161616161616161616161e803610a61646161fa8900fa646461610a"
+        hex_data = "61 00 00 00 ff 61 61 61  61 61 64 61 00 61 61 61 61 61 61 61 61 61 61 00  61 61 ff ff 7f ff 61 61 61 61 61 fb 00 40 80 61 61 61 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 61 61 61 61 61 61 61 61 61 61 61 61 fb 00 00 80 61 61 61 37 37 37 37 37 37 37 37 37 37  37 37 37 37 37 37 61 61 61 61 61 61 00 "
+        hex_data = hex_data.replace(" ", "")
         # Parse the hexadecimal string and create a byte array
         byte_array = bytes.fromhex(hex_data)
         self.ql.env["USB_META"] = byte_array

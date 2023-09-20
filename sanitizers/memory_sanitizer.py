@@ -1,7 +1,8 @@
 import os
 
 from qiling.const import *
-from qiling.extensions.sanitizers.heap import QlSanitizedMemoryHeap
+#from qiling.extensions.sanitizers.heap import QlSanitizedMemoryHeap
+from .heap import QlSanitizedMemoryHeap
 from .base_sanitizer import base_sanitizer
 
 class memory_sanitizer(base_sanitizer):
@@ -94,8 +95,17 @@ class memory_sanitizer(base_sanitizer):
 
         def uaf_handler(ql, access, addr, size, value):
             print("***************************************************")
-            print(f'uaf_handler - {access}, {addr}, {size}, {value}')
+            print(f'uaf_handler - {access}, {hex(addr)}, {size}, {value}')
             print("***")
+            #pc = ql.arch.regs.arch_pc
+            #print(hex(pc))
+            #data = self.ql.mem.read(pc, size=64)
+            #data2 = self.ql.mem.read(addr, size=64)
+            #ql.os.emit_context()
+            #ql.os.emit_hexdump(pc, data)
+            #ql.os.emit_hexdump(addr, data2)
+            #ql.os.emit_disasm(pc, data)
+            #ql.os.emit_stack()
             os.abort()
 
         def bad_free_handler(ql, addr):

@@ -92,11 +92,15 @@ def check_usb_meta_len(ql, length):
 	"Direction": PTR(VOID), 
 	"Timeout": UINT32,
 	"Data": PTR(VOID),
-	"DataLength": PTR(VOID),
+	"DataLength": UINT16,
 	"Status": PTR(EFI_STATUS)
 })
 def hook_UsbControlTransfer(ql, address, params):
     print("**************** hook_UsbControlTransfer")
+    print(params)
+    random_bytes = bytes([random.randint(0, 255) for _ in range(params["DataLength"])])
+    ql.mem.write(params["Data"], random_bytes)
+    return EFI_SUCCESS
 	    
 @dxeapi(params = {
 	"SkuId" : UINT
