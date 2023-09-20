@@ -56,19 +56,15 @@ def start_afl(_ql: Qiling, user_data):
         else:
             print("!"*10, "AFL IS NO HEAP VALIDATE CRASH")
         print(hex(_ql.arch.regs.arch_pc))
-        if _ql.arch.regs.arch_pc in [0x4012130, 0]:
-            return False
-        # Our exit hook
+        print(_ql.env["END"])
         if _ql.env["END"]:
             print("IS END")
+            _ql.env["END"] = False
             return False
-        print(_ql.env["END"])
         print(err)
         print(_ql.internal_exception)
-        return bool(err)
         crash = (_ql.internal_exception is not None) or (
             err != UC_ERR_OK)
-        print(_ql.internal_exception)
         print("Crash", crash)
         return crash
 
@@ -184,4 +180,4 @@ class FuzzingManager(EmulationManager):
         # We want AFL's forkserver to spawn new copies starting from the main module's entrypoint.
         #self.ql.hook_address(callback=start_afl, address=entry_point, user_data=(kwargs['varname'], kwargs['infile']))
 
-        super().run(end, timeout)
+        super().run(end, timeout, 'fuzz')

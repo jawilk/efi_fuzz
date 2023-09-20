@@ -152,7 +152,6 @@ def hook_UsbGetConfigDescriptor(ql, address, params):
 	"InterfaceDescriptor": PTR(VOID)
 })
 def hook_UsbGetInterfaceDescriptor(ql, address, params):
-    print("**************** hook_UsbGetInterfaceDescriptor")
     #interface_descriptor = InterfaceDescriptor()
     #ql.mem.write(address, ctypes.byref(interface_descriptor), ctypes.sizeof(interface_descriptor))
     # random_bytes = bytes([random.randint(0, 5) for _ in range(9)])
@@ -169,8 +168,6 @@ def hook_UsbGetInterfaceDescriptor(ql, address, params):
 	"EndpointDescriptor": PTR(VOID)
 })
 def hook_UsbGetEndpointDescriptor(ql, address, params):
-    print("**************** hook_UsbGetEndpointDescriptor")
-    print(params)
     # random_bytes = bytes([random.randint(0, 255) for _ in range(7)])
     endpoint_index = 7 * params["EndpointIndex"]
     check_usb_meta_len(ql, 25 + endpoint_index)

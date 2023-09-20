@@ -192,7 +192,7 @@ class EmulationManager:
     def setup_driver_binding_start(self, a):
         print("!"*10, "setup_driver_binding_start")
         
-        hex_data = "7800000064317830307830317830303177770500003101663034583031"
+        hex_data = "610100006161fa0040fa496161610a6161616161616161616161e803610a61646161fa8900fa646461610a"
         # Parse the hexadecimal string and create a byte array
         byte_array = bytes.fromhex(hex_data)
         self.ql.env["USB_META"] = byte_array
@@ -215,10 +215,12 @@ class EmulationManager:
             # Give afl this func's address as fuzzing end
             print("VALIDATED:", ql.os.heap.validate())
             print("!" * 10, "END CLEANUP")
+            # os.abort()
+            return True
 
         cleanup_trap = self.ql.os.heap.alloc(self.ql.arch.pointersize)
         hret = self.ql.hook_address(__cleanup, cleanup_trap)
-        self.ql.os.fcall.call_native(address_to_call, targs, 0)
+        self.ql.os.fcall.call_native(address_to_call, targs, cleanup_trap)
         
         print("VALIDATED:", self.ql.os.heap.validate())
         
