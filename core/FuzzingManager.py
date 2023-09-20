@@ -26,6 +26,7 @@ def start_afl(_ql: Qiling, user_data):
     #(varname, infile) = user_data
     # Fat
     infile = user_data
+    print(infile)
 
     def place_input_callback_nvram(uc, _input, _, data):
     # """
@@ -34,7 +35,9 @@ def start_afl(_ql: Qiling, user_data):
         _ql.env[varname] = _input
 
     def place_input_callback_fat_meta(uc, _input, _, data):
+        print(_input.raw)
         _ql.env["USB_META"] = _input.raw
+        return True
 
     def validate_crash(uc, err, _input, persistent_round, user_data):
         """
@@ -53,7 +56,7 @@ def start_afl(_ql: Qiling, user_data):
         else:
             print("!"*10, "AFL IS NO HEAP VALIDATE CRASH")
         print(hex(_ql.arch.regs.arch_pc))
-        if _ql.arch.regs.arch_pc == 0x4012130:
+        if _ql.arch.regs.arch_pc in [0x4012130, 0]:
             return False
         # Our exit hook
         if _ql.env["END"]:
@@ -139,15 +142,17 @@ class FuzzingManager(EmulationManager):
             '/blah/dummy_file'))
 
         # 1st arg is fat driver, 2nd is our FakeController handle
-        args = [0x109140, 0x101000]
+        #args = [0x109140, 0x101000]
+        # Usb
+        args = [0x102a3e, 0x1]
         types = (PARAM_INTN, ) * len(args)
         targs = tuple(zip(types, args))
 
         self.ql.env["END"] = False
 
         def __cleanup(ql: Qiling):
-            self.ql.env["END"] = True
             # Give afl this address as fuzzing end address
+            self.ql.env["END"] = True
             print("!"*10, "END CLEANUP")
 
         cleanup_trap = self.ql.os.heap.alloc(self.ql.arch.pointersize)
