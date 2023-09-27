@@ -149,6 +149,7 @@ def hook_UsbGetConfigDescriptor(ql, address, params):
     # print(random_bytes[4])
     check_usb_meta_len(ql, 9)
     ql.mem.write(params["ConfigDesc"], ql.env["USB_META"][:9])
+    print("TotalLength:", int.from_bytes(ql.env["USB_META"][:9][2:4], byteorder='little'))
     return EFI_SUCCESS
 
 @dxeapi(params = {

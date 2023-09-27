@@ -1,0 +1,10 @@
+python3
+../../efi_fuzz.py
+fuzz
+modules/UsbMouseDxe_EDK2.efi
+-v
+nvram.pickle
+-v
+../../nvram.pickle
+fat
+@@

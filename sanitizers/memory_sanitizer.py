@@ -83,13 +83,13 @@ class memory_sanitizer(base_sanitizer):
 
         def bo_handler(ql, access, addr, size, value):
             print("***************************************************")
-            print(f'bo_handler - {access}, {addr}, {size}, {value}')
+            print(f'bo_handler - {access}, {hex(addr)}, {size}, {value}')
             print("***")
             os.abort()
 
         def oob_handler(ql, access, addr, size, value):
             print("***************************************************")
-            print(f'oob_handler - {access}, {addr}, {size}, {value}')
+            print(f'oob_handler - {access}, {hex(addr)}, {size}, {value}')
             print("***")
             os.abort()
 
@@ -110,7 +110,7 @@ class memory_sanitizer(base_sanitizer):
 
         def bad_free_handler(ql, addr):
             print("***************************************************")
-            print(f'bad_free_handler - {addr}')
+            print(f'bad_free_handler - {hex(addr)}')
             print("***")
             os.abort()
 

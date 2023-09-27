@@ -118,8 +118,9 @@ class FuzzingManager(EmulationManager):
         #target = self.ql.loader.images[-1].path
         #pe = pefile.PE(target, fast_load=True)
         image_base = self.ql.loader.images[-1].base
-        address_to_call = image_base + 0x21e7  # 0x800021e7
-        
+        # mouse 0x21e7 keyboard 0x38a1
+        #address_to_call = image_base + 0x21e7  # 0x800021e7
+        address_to_call = image_base + 0x38a1
         # FatDriverBindingStart (from ghidra)
         #target = self.ql.loader.images[-1].path
         #pe = pefile.PE(target, fast_load=True)
@@ -139,8 +140,8 @@ class FuzzingManager(EmulationManager):
 
         # 1st arg is fat driver, 2nd is our FakeController handle
         #args = [0x109140, 0x101000]
-        # Usb
-        args = [0x102a3e, 0x1]
+        # Usb mouse 0x102a3e keyboard 0x10498a
+        args = [0x10498a, 0x1]
         types = (PARAM_INTN, ) * len(args)
         targs = tuple(zip(types, args))
 

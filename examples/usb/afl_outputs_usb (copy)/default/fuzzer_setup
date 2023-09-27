@@ -1,0 +1,6 @@
+# environment variables:
+AFL_CUSTOM_INFO_PROGRAM=python3
+AFL_CUSTOM_INFO_PROGRAM_ARGV=../../efi_fuzz.py fuzz modules/UsbMouseDxe_EDK2.efi -v nvram.pickle -v ../../nvram.pickle fat @@
+AFL_CUSTOM_INFO_OUT=afl_outputs_usb/default
+# command line:
+'afl-fuzz' '-D' '-p' 'explore' '-i' '../../afl_inputs_usb' '-o' 'afl_outputs_usb' '-U' '--' 'python3' '../../efi_fuzz.py' 'fuzz' 'modules/UsbMouseDxe_EDK2.efi' '-v' 'nvram.pickle' '-v' '../../nvram.pickle' 'fat' '@@'

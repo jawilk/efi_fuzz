@@ -9,6 +9,7 @@ from qiling.extensions.coverage import utils as cov_utils
 import json
 import dummy_protocol
 import UsbIoProtocol
+import Usb2HcProtocol
 import DevicePathProtocol
 from . import fault
 import os
@@ -44,8 +45,9 @@ class EmulationManager:
         
         descriptor = UsbIoProtocol.descriptor
         self.ql.loader.dxe_context.install_protocol(descriptor, 1)
-        
         descriptor = DevicePathProtocol.descriptor
+        self.ql.loader.dxe_context.install_protocol(descriptor, 1)
+        descriptor = Usb2HcProtocol.descriptor
         self.ql.loader.dxe_context.install_protocol(descriptor, 1)
         
         self.ql.env["USB_META"] = bytes([random.randint(0, 5) for _ in range(25)])
@@ -104,7 +106,7 @@ class EmulationManager:
         if conf.get('protocols'):
             for proto in conf['protocols']:
                 descriptor = dummy_protocol.make_descriptor(proto['guid'])
-                self.ql.loader.dxe_context.install_protocol(descriptor, 1)
+                self.ql.loader.dxe_:qcontext.install_protocol(descriptor, 1)
 
         if conf.get('registers'):
             self.ql.os.smm.swsmi_args['registers'] = conf['registers']
@@ -188,27 +190,52 @@ class EmulationManager:
         print("!"*10, "USB DRIVER BINDING START")
         #self.ql.os.emit_context()
         # print(hex(self.ql.arch.regs.arch_pc))
+        
+    def usb_mouse_lenovo(self, m):
+        print("!"*10, "MID USB DRIVER BINDING START")
 
     def setup_driver_binding_start(self, a):
         print("!"*10, "setup_driver_binding_start")
         
-        hex_data = "61 00 00 00 ff 61 61 61  61 61 64 61 00 61 61 61 61 61 61 61 61 61 61 00  61 61 ff ff 7f ff 61 61 61 61 61 fb 00 40 80 61 61 61 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 61 61 61 61 61 61 61 61 61 61 61 61 fb 00 00 80 61 61 61 37 37 37 37 37 37 37 37 37 37  37 37 37 37 37 37 61 61 61 61 61 61 00 "
+        # hex_data = "b3 b3 01 00 b3 b4 b3 b3 b3 b3 b3 b3 b3 b3 b3 b3 b3 b3 a6 b3 b3 b3 b3 b3  b3 b3 b3 b3 b3 bb b3 b3 b3 31 b3 b3 b3 b3 b3 b3  b3 bb b3 b3 b3 31"
+        hex_data = '''61 a7 be a7 a7 07 aa aa aa aa e9 aa aa 7f 7f 7f 7f 7f ff 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f
+7f 7f 7f 77 7f 00 00 01 00 7f 7f 7f 7f 7f 7f
+7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f
+7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f
+7f 7f 75 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f
+7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f
+8f 8f 8f 8f 8f 8f 8f 8f 8f 97 8f 8f 8f 8f 8f 8f
+8f 8f 8f 8e 8f 8f 8f 8f 8f 8f 8f 8f 8f 8f 8f
+8f 8f 8f 8f 8f 8f 0a 61'''
         hex_data = hex_data.replace(" ", "")
+        print(hex_data)
         # Parse the hexadecimal string and create a byte array
         byte_array = bytes.fromhex(hex_data)
         self.ql.env["USB_META"] = byte_array
         
         # UsbBus UsbBusControllerDriverStart
         image_base = self.ql.loader.images[-1].base
+        # mouse 0x21e7 keyboard 0x38a1 mouse lenovo 0x18e4 busdxe bug 0x452d
         address_to_call = image_base + 0x21e7  # 0x800021e7
+        #address_to_call = image_base + 0x38a1
+        #address_to_call = image_base + 0x18e4
+        #address_to_call = image_base + 0x452d
         print("ADDRESS: *****************", hex(address_to_call))
         self.ql.hook_address(address=address_to_call,
                              callback=self.usb_bus_binding_start)
         
+        # Breakpoints
+        address_to_call_2 = image_base + 0x575b
+        self.ql.hook_address(address=address_to_call_2,
+                             callback=self.usb_mouse_lenovo)
+                             
         # 1st arg is fat driver, 2nd is our FakeController handle
         #args = [0x109140, 0x101000]
         # UsbMouse
         args = [0x102a3e, 0x1]
+        # Usb mouse 0x102a3e keyboard 0x10498a mouse lenovo 0x101074 busdxe bug 0x107159
+        #args = [0x107159, 0x1]
+        types = (PARAM_INTN, ) * len(args)
         types = (PARAM_INTN, ) * len(args)
         targs = tuple(zip(types, args))
 
@@ -277,6 +304,11 @@ class EmulationManager:
             end = callbacks.set_end_of_execution_callback(self.ql, end)
 
         self._enable_sanitizers()
+
+        #image_base = self.ql.loader.images[-1].base
+        #address_to_call_2 = image_base + 0x7d68
+        #self.ql.hook_address(address=address_to_call_2,
+                             #callback=self.usb_mouse_lenovo)
 
         # try:
             # Don't collect coverage information unless explicitly requested by the user.
