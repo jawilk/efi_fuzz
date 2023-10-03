@@ -145,10 +145,10 @@ def hook_UsbGetDeviceDescriptor(ql, address, params):
 	"ConfigDesc": PTR(VOID)
 })
 def hook_UsbGetConfigDescriptor(ql, address, params):
-    # random_bytes = bytes([random.randint(0, 255) for _ in range(9)])
+    random_bytes = bytes([random.randint(0, 255) for _ in range(9)])
     # print(random_bytes[4])
     check_usb_meta_len(ql, 9)
-    ql.mem.write(params["ConfigDesc"], ql.env["USB_META"][:9])
+    ql.mem.write(params["ConfigDesc"], random_bytes)#ql.env["USB_META"][:9])
     print("TotalLength:", int.from_bytes(ql.env["USB_META"][:9][2:4], byteorder='little'))
     return EFI_SUCCESS
 
@@ -159,11 +159,11 @@ def hook_UsbGetConfigDescriptor(ql, address, params):
 def hook_UsbGetInterfaceDescriptor(ql, address, params):
     #interface_descriptor = InterfaceDescriptor()
     #ql.mem.write(address, ctypes.byref(interface_descriptor), ctypes.sizeof(interface_descriptor))
-    # random_bytes = bytes([random.randint(0, 5) for _ in range(9)])
+    random_bytes = bytes([random.randint(0, 5) for _ in range(9)])
     # print(random_bytes[4])
     check_usb_meta_len(ql, 18)
-    a = ql.env["USB_META"][9:18]
-    ql.mem.write(params["InterfaceDescriptor"], ql.env["USB_META"][9:18])
+    #a = ql.env["USB_META"][9:18]
+    ql.mem.write(params["InterfaceDescriptor"], random_bytes)#ql.env["USB_META"][9:18])
     return EFI_SUCCESS
 
 
