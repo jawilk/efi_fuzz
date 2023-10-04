@@ -175,6 +175,11 @@ class EFI_USB_CORE_PROTOCOL(STRUCT):
 ('UnregisterHidDescriptor', EFI_USB_CORE_UNREGISTER_HID_DESCRIPTOR)
 	]
 	
+def check_usb_meta_len(ql, length):
+	diff = length - len(ql.env["USB_META"])
+	if diff > 0:
+		ql.env["USB_META"] = ql.env["USB_META"] + b'\x00' * diff	
+	
 @dxeapi(params = {
 	"AllocSize": UINTN,
 	"Alignment": UINTN,
@@ -269,8 +274,10 @@ def hook_GetMode(ql, address, params):
 def hook_UsbGetHidDescriptor(ql, address, params):
     print("**************** hook_UsbGetHidDescriptor USB_CORE_PROTOCOL")
     print(params)
-    random_bytes = bytes([random.randint(0, 255) for _ in range(9-1)])
-    ql.mem.write(params["HidDescriptor"], random_bytes)#ql.env["USB_META"
+    check_usb_meta_len(ql, 49)
+    ql.mem.write(params["HidDescriptor"], ql.env["USB_META"][40:49])
+    #random_bytes = bytes([random.randint(0, 255) for _ in range(9-1)])
+    #ql.mem.write(params["HidDescriptor"], random_bytes)
     return EFI_SUCCESS 
  
 @dxeapi(params = {
@@ -282,8 +289,10 @@ def hook_UsbGetHidDescriptor(ql, address, params):
 def hook_UsbGetReportDescriptor(ql, address, params):
     print("**************** hook_UsbGetReportDescriptor USB_CORE_PROTOCOL")
     print(params)
-    random_bytes = bytes([random.randint(0, 255) for _ in range(params["DescriptorSize"]-1)])
-    ql.mem.write(params["DescriptorBuffer"], random_bytes)#ql.env["USB_META"
+    check_usb_meta_len(ql, 50+params["DescriptorSize"])
+    ql.mem.write(params["DescriptorBuffer"], ql.env["USB_META"][50:50+params["DescriptorSize"]])
+    #random_bytes = bytes([random.randint(0, 255) for _ in range(params["DescriptorSize"]-1)])
+    #ql.mem.write(params["DescriptorBuffer"], random_bytes)#ql.env["USB_META"
     return EFI_SUCCESS    
 
 @dxeapi(params = {
@@ -296,7 +305,6 @@ def hook_UsbGetReportDescriptor(ql, address, params):
 })
 def hook_UsbSetReportRequest(ql, address, params):
     print("**************** hook_UsbSetReportRequest USB_CORE_PROTOCOL")
-    print(params)
     return EFI_SUCCESS    
     
 
