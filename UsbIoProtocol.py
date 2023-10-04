@@ -159,7 +159,7 @@ def hook_UsbGetConfigDescriptor(ql, address, params):
 def hook_UsbGetInterfaceDescriptor(ql, address, params):
     #interface_descriptor = InterfaceDescriptor()
     #ql.mem.write(address, ctypes.byref(interface_descriptor), ctypes.sizeof(interface_descriptor))
-    random_bytes = bytes([random.randint(0, 5) for _ in range(9)])
+    random_bytes = bytes([random.randint(3, 10) for _ in range(9)])
     # print(random_bytes[4])
     check_usb_meta_len(ql, 18)
     #a = ql.env["USB_META"][9:18]
@@ -173,10 +173,14 @@ def hook_UsbGetInterfaceDescriptor(ql, address, params):
 	"EndpointDescriptor": PTR(VOID)
 })
 def hook_UsbGetEndpointDescriptor(ql, address, params):
-    # random_bytes = bytes([random.randint(0, 255) for _ in range(7)])
+    #random_bytes = bytes([random.randint(0, 255) for _ in range(6)])
+    byte_array = bytearray([random.randint(0x00, 0xFF) for _ in range(6)])
+    byte_array[2] = 0x80
+    byte_array[3] = 0x03
+    random_bytes = bytes(byte_array)
     endpoint_index = 7 * params["EndpointIndex"]
     check_usb_meta_len(ql, 25 + endpoint_index)
-    ql.mem.write(params["EndpointDescriptor"], ql.env["USB_META"][18+endpoint_index:25+endpoint_index])
+    ql.mem.write(params["EndpointDescriptor"], random_bytes)#ql.env["USB_META"][18+endpoint_index:25+endpoint_index])
     return EFI_SUCCESS
 
 @dxeapi(params = {

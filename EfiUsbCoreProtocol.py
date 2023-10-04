@@ -9,6 +9,8 @@ from qiling.os.uefi.fncc import *
 from qiling.os.uefi.ProcessorBind import *
 from qiling.os.uefi.UefiBaseType import *
 
+import random
+
 
 EFI_USB_CORE_GET_DESCRIPTOR         =         FUNCPTR(EFI_STATUS, PTR(VOID));
 EFI_USB_CORE_SET_DESCRIPTOR         =         FUNCPTR(EFI_STATUS, PTR(VOID));
@@ -179,12 +181,24 @@ class EFI_USB_CORE_PROTOCOL(STRUCT):
 	"Pool": PTR(VOID)
 })
 def hook_AllocateBuffer(ql, address, params):
-    print("**************** hook_AllocateBuffer USB_CORE_PROTOCOL")
+    print("**************** UsbCore hook_AllocateBuffer USB_CORE_PROTOCOL")
     print(params)
     print(hex(address))
     ptr = ql.os.heap.alloc(params['AllocSize'])
     print(hex(ptr))
     ql.mem.write(params["Pool"], ptr.to_bytes(8, byteorder='little'))
+    return EFI_SUCCESS
+
+@dxeapi(params = {
+	"AllocSize": UINTN,
+	"Pool": PTR(VOID)
+})
+def hook_FreeBuffer(ql, address, params):
+    print("**************** hook_FreeBuffer USB_CORE_PROTOCOL")
+    print(params)
+    print(hex(address))
+    ptr = ql.os.heap.free(params['Pool'])
+    print(hex(ptr))
     return EFI_SUCCESS
 
 @dxeapi(params = {
@@ -245,8 +259,46 @@ def hook_GetMode(ql, address, params):
     print(params)
     mode = 0x03
     ql.mem.write(params["Mode"], mode.to_bytes(8, byteorder='little'))
-    return EFI_SUCCESS  	
-	
+    return EFI_SUCCESS  
+    
+@dxeapi(params = {
+	"UsbIo": PTR(VOID),
+	"InterfaceNum": UINT8,
+	"HidDescriptor": PTR(VOID)
+})
+def hook_UsbGetHidDescriptor(ql, address, params):
+    print("**************** hook_UsbGetHidDescriptor USB_CORE_PROTOCOL")
+    print(params)
+    random_bytes = bytes([random.randint(0, 255) for _ in range(9-1)])
+    ql.mem.write(params["HidDescriptor"], random_bytes)#ql.env["USB_META"
+    return EFI_SUCCESS 
+ 
+@dxeapi(params = {
+	"UsbIo": PTR(VOID),
+	"InterfaceNum": UINT8,
+	"DescriptorSize": UINT16,
+	"DescriptorBuffer": UINT8
+})
+def hook_UsbGetReportDescriptor(ql, address, params):
+    print("**************** hook_UsbGetReportDescriptor USB_CORE_PROTOCOL")
+    print(params)
+    random_bytes = bytes([random.randint(0, 255) for _ in range(params["DescriptorSize"]-1)])
+    ql.mem.write(params["DescriptorBuffer"], random_bytes)#ql.env["USB_META"
+    return EFI_SUCCESS    
+
+@dxeapi(params = {
+	"UsbIo": PTR(VOID),
+	"Interface": UINT8,
+	"ReportId": UINT8,
+	"ReportType": UINT8,
+	"ReportLen": UINT16,
+	"Report": UINT8
+})
+def hook_UsbSetReportRequest(ql, address, params):
+    print("**************** hook_UsbSetReportRequest USB_CORE_PROTOCOL")
+    print(params)
+    return EFI_SUCCESS    
+    
 
 descriptor = {
     "guid" : "c965c76a-d71e-4e66-ab06-c6230d528425",
@@ -263,16 +315,16 @@ descriptor = {
 ('UsbGetDeviceStatus', hook_DummyHook),
 ('UsbGetString', hook_DummyHook),
 ('UsbClearEndpointHalt', hook_DummyHook),
-('UsbGetHidDescriptor', hook_DummyHook),
-('UsbGetReportDescriptor', hook_DummyHook),
+('UsbGetHidDescriptor', hook_UsbGetHidDescriptor),
+('UsbGetReportDescriptor', hook_UsbGetReportDescriptor),
 ('UsbGetProtocolRequest', hook_DummyHook),
 ('UsbSetProtocolRequest', hook_DummyHook),
 ('UsbGetIdleRequest', hook_DummyHook),
 ('UsbSetIdleRequest', hook_DummyHook),
 ('UsbGetReportRequest', hook_DummyHook),
-('UsbSetReportRequest', hook_DummyHook),
+('UsbSetReportRequest', hook_UsbSetReportRequest),
 ('AllocateBuffer', hook_AllocateBuffer),
-('FreeBuffer', hook_DummyHook),
+('FreeBuffer', hook_FreeBuffer),
 ('MemoryMapping', hook_DummyHook),
 ('MemoryUnmapping', hook_DummyHook),
 ('PciIoPciRead', hook_DummyHook),

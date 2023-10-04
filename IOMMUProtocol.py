@@ -36,7 +36,7 @@ class IOMMU_PROTOCOL(STRUCT):
 	"Status": PTR(EFI_STATUS)
 })
 def hook_AllocateBuffer(ql, address, params):
-    print("**************** hook_AllocateBuffer")
+    print("**************** IOMMU hook_AllocateBuffer")
     print(params)
     return EFI_SUCCESS
 	

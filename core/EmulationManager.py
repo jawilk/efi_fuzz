@@ -11,6 +11,12 @@ import dummy_protocol
 import UsbIoProtocol
 import Usb2HcProtocol
 import DevicePathProtocol
+import PcdProtocol
+import EfiPcdProtocol
+import GetPcdInfoProtocol
+import EfiGetPcdInfoProtocol
+import IOMMUProtocol
+import EfiUsbCoreProtocol
 from . import fault
 import os
 import binascii
@@ -20,7 +26,7 @@ from unicorn.x86_const import *
 from conditional import conditional
 import random
 
-from qiling.os.const import PARAM_INTN
+from qiling.os.const import PARAM_INTN, PARAM_PTRX
 
 
 class EmulationManager:
@@ -48,6 +54,18 @@ class EmulationManager:
         descriptor = DevicePathProtocol.descriptor
         self.ql.loader.dxe_context.install_protocol(descriptor, 1)
         descriptor = Usb2HcProtocol.descriptor
+        self.ql.loader.dxe_context.install_protocol(descriptor, 1)
+        descriptor = PcdProtocol.descriptor
+        self.ql.loader.dxe_context.install_protocol(descriptor, 1)
+        descriptor = EfiPcdProtocol.descriptor
+        self.ql.loader.dxe_context.install_protocol(descriptor, 1)
+        descriptor = GetPcdInfoProtocol.descriptor
+        self.ql.loader.dxe_context.install_protocol(descriptor, 1)
+        descriptor = EfiGetPcdInfoProtocol.descriptor
+        self.ql.loader.dxe_context.install_protocol(descriptor, 1)
+        descriptor = IOMMUProtocol.descriptor
+        self.ql.loader.dxe_context.install_protocol(descriptor, 1)
+        descriptor = EfiUsbCoreProtocol.descriptor
         self.ql.loader.dxe_context.install_protocol(descriptor, 1)
         
         self.ql.env["USB_META"] = bytes([random.randint(0, 5) for _ in range(25)])
@@ -144,7 +162,7 @@ class EmulationManager:
 
     def fat_binding_start(self, m):
         print("!"*10, "FAT DRIVER BINDING START")
-        self.ql.os.emit_context()
+        #self.ql.os.emit_context()
         # print(hex(self.ql.arch.regs.arch_pc))
 
     def fat_open_device(self, m):
@@ -192,50 +210,72 @@ class EmulationManager:
         # print(hex(self.ql.arch.regs.arch_pc))
         
     def usb_mouse_lenovo(self, m):
-        print("!"*10, "MID USB DRIVER BINDING START")
+        print("!"*10, "HI MID USB DRIVER BINDING START")
+        #value = 0x4012184
+        #byte_representation = value.to_bytes(4, byteorder='little')
+        #self.ql.arch.regs.rax = 0x4012184#byte_representation
+        #print(byte_representation)
+        #self.ql.mem.write(self.ql.arch.regs.rbp-0x28, byte_representation)
+        #self.ql.os.emit_context()
+        #self.ql.os.emit_stack(0x40)
+        
+    def usb_kb(self, m):
+        print("!"*10, "HI KEYBOARD")        
 
     def setup_driver_binding_start(self, a):
         print("!"*10, "setup_driver_binding_start")
         
-        # hex_data = "b3 b3 01 00 b3 b4 b3 b3 b3 b3 b3 b3 b3 b3 b3 b3 b3 b3 a6 b3 b3 b3 b3 b3  b3 b3 b3 b3 b3 bb b3 b3 b3 31 b3 b3 b3 b3 b3 b3  b3 bb b3 b3 b3 31"
-        hex_data = '''61 a7 be a7 a7 07 aa aa aa aa e9 aa aa 7f 7f 7f 7f 7f ff 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f
-7f 7f 7f 77 7f 00 00 01 00 7f 7f 7f 7f 7f 7f
-7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f
-7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f
-7f 7f 75 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f
-7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f
-8f 8f 8f 8f 8f 8f 8f 8f 8f 97 8f 8f 8f 8f 8f 8f
-8f 8f 8f 8e 8f 8f 8f 8f 8f 8f 8f 8f 8f 8f 8f
-8f 8f 8f 8f 8f 8f 0a 61'''
+        hex_data = "b3 b3 01 00 b3 b4 b3 b3 b3 b3 b3 b3 b3 b3 b3 b3 b3 b3 a6 b3 b3 b3 b3 b3  b3 b3 b3 b3 b3 bb b3 b3 b3 31 b3 b3 b3 b3 b3 b3  b3 bb b3 b3 b3 31"
+        #hex_data = '''61 a7 be a7 a7 07 aa aa aa aa e9 aa aa 7f 7f 7f 7f 7f ff 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f
+#7f 7f 7f 77 7f 00 00 01 00 7f 7f 7f 7f 7f 7f
+#7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f
+#7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f
+#7f 7f 75 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f
+#7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f
+#8f 8f 8f 8f 8f 8f 8f 8f 8f 97 8f 8f 8f 8f 8f 8f
+#8f 8f 8f 8e 8f 8f 8f 8f 8f 8f 8f 8f 8f 8f 8f
+#8f 8f 8f 8f 8f 8f 0a 61'''
         hex_data = hex_data.replace(" ", "")
-        print(hex_data)
+        #print(hex_data)
         # Parse the hexadecimal string and create a byte array
         byte_array = bytes.fromhex(hex_data)
         self.ql.env["USB_META"] = byte_array
         
         # UsbBus UsbBusControllerDriverStart
         image_base = self.ql.loader.images[-1].base
-        # mouse 0x21e7 keyboard 0x38a1 mouse lenovo 0x18e4 busdxe bug 0x452d
-        address_to_call = image_base + 0x21e7  # 0x800021e7
-        #address_to_call = image_base + 0x38a1
-        #address_to_call = image_base + 0x18e4
+        # mouse 0x21e7 keyboard 0x38a1 mouse lenovo 0x18e4 busdxe bug 0x452d inline 0x618b (UsbBuildDescTable)
+        #address_to_call = image_base + 0x720  # 0x800021e7
+        #address_to_call = image_base + 0x21e7
+        address_to_call = image_base + 0x18e4
         #address_to_call = image_base + 0x452d
         print("ADDRESS: *****************", hex(address_to_call))
         self.ql.hook_address(address=address_to_call,
                              callback=self.usb_bus_binding_start)
         
         # Breakpoints
-        address_to_call_2 = image_base + 0x575b
-        self.ql.hook_address(address=address_to_call_2,
-                             callback=self.usb_mouse_lenovo)
+        #address_to_call_2 = image_base + 0x250
+        #self.ql.hook_address(address=address_to_call_2,
+         #                    callback=self.usb_mouse_lenovo)
+        #address_to_call_3 = image_base + 0x29c
+        #self.ql.hook_address(address=address_to_call_3,
+         #                    callback=self.usb_kb)
                              
         # 1st arg is fat driver, 2nd is our FakeController handle
         #args = [0x109140, 0x101000]
         # UsbMouse
-        args = [0x102a3e, 0x1]
-        # Usb mouse 0x102a3e keyboard 0x10498a mouse lenovo 0x101074 busdxe bug 0x107159
-        #args = [0x107159, 0x1]
-        types = (PARAM_INTN, ) * len(args)
+        args = [0x101074, 0x1]
+        # Usb mouse 0x102a3e keyboard 0x10498a mouse lenovo 0x101074 busdxe bug 0x107159 inline 0x107174 (UsbBuildDescTable; arg is USB_DEVICE)
+        print("alloc mouse dev")
+        #usb_dev_ptr = self.ql.os.heap.alloc(0x400)
+        #usb_bus_ptr = self.ql.os.heap.alloc(0x40)
+        #print("ptr", hex(usb_dev_ptr))
+        #random_bytes = bytes([random.randint(0, 255) for _ in range(0x400)])
+        #value = 0x4012184
+        #byte_representation = value.to_bytes(4, byteorder='little')
+        #self.ql.mem.write(usb_dev_ptr, byte_representation)
+        #self.ql.mem.write(usb_dev_ptr, usb_bus_ptr.to_bytes(4, byteorder='little'))
+        #args = [usb_dev_ptr]
+        #args = [0x107174, 0x1]
         types = (PARAM_INTN, ) * len(args)
         targs = tuple(zip(types, args))
 
@@ -312,7 +352,7 @@ class EmulationManager:
 
         # try:
             # Don't collect coverage information unless explicitly requested by the user.
-        with conditional(self.coverage_file, cov_utils.collect_coverage(self.ql, 'drcov_exact', self.coverage_file)):
+        with conditional(self.coverage_file, cov_utils.collect_coverage(self.ql, 'drcov', self.coverage_file)):
             self.ql.run(end=end, timeout=timeout)
         # except fault.ExitEmulation:
             # pass
