@@ -275,7 +275,10 @@ def hook_UsbGetHidDescriptor(ql, address, params):
     print("**************** hook_UsbGetHidDescriptor USB_CORE_PROTOCOL")
     print(params)
     check_usb_meta_len(ql, 49)
-    ql.mem.write(params["HidDescriptor"], ql.env["USB_META"][40:49])
+    data = ql.env["USB_META"][40:49]
+    new_bytes = data[:6] + bytes([0x22]) + data[7:]
+    print(new_bytes)
+    ql.mem.write(params["HidDescriptor"], new_bytes)
     #random_bytes = bytes([random.randint(0, 255) for _ in range(9-1)])
     #ql.mem.write(params["HidDescriptor"], random_bytes)
     return EFI_SUCCESS 
@@ -306,6 +309,13 @@ def hook_UsbGetReportDescriptor(ql, address, params):
 def hook_UsbSetReportRequest(ql, address, params):
     print("**************** hook_UsbSetReportRequest USB_CORE_PROTOCOL")
     return EFI_SUCCESS    
+    
+@dxeapi(params = {
+	"Timeout": UINTN
+})
+def hook_Stall(ql, address, params):
+    print("**************** hook_Stall USB_CORE_PROTOCOL")
+    return EFI_SUCCESS       
     
 
 descriptor = {
@@ -349,7 +359,7 @@ descriptor = {
 ('IoWrite32', hook_DummyHook),
 ('Bswap16', hook_DummyHook),
 ('Bswap32', hook_DummyHook),
-('Stall', hook_DummyHook),
+('Stall', hook_Stall),
 ('CpuSaveState', hook_DummyHook),
 ('GetMode', hook_GetMode),
 ('SetMode', hook_DummyHook),

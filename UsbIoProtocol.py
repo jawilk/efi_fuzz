@@ -180,7 +180,9 @@ def hook_UsbGetEndpointDescriptor(ql, address, params):
     #random_bytes = bytes(byte_array)
     endpoint_index = 7 * params["EndpointIndex"]
     check_usb_meta_len(ql, 25 + endpoint_index)
-    ql.mem.write(params["EndpointDescriptor"], ql.env["USB_META"][18+endpoint_index:25+endpoint_index])
+    data = ql.env["USB_META"][18+endpoint_index:25+endpoint_index]
+    new_bytes = data[:2] + bytes([0x80]) + bytes([0x03]) + data[2+2:]
+    ql.mem.write(params["EndpointDescriptor"], new_bytes)
     return EFI_SUCCESS
 
 @dxeapi(params = {
