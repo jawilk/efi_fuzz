@@ -40,7 +40,7 @@ class EmulationManager:
             extra_modules = []
 
         self.ql = Qiling(extra_modules + [target_module],
-                         ".", verbose=QL_VERBOSE.DEBUG)
+                         ".", verbose=QL_VERBOSE.DEBUG)#DEBUG)#DISABLED
 
         # callbacks.init_callbacks(self.ql)
 
@@ -225,7 +225,10 @@ class EmulationManager:
     def setup_driver_binding_start(self, a):
         print("!"*10, "setup_driver_binding_start")
         
-        hex_data = "b3 b3 01 00 b3 b4 b3 b3 b3 b3 b3 b3 b3 b3 b3 b3 b3 b3 a6 b3 b3 b3 b3 b3  b3 b3 b3 b3 b3 bb b3 b3 b3 31 b3 b3 b3 b3 b3 b3  b3 bb b3 b3 b3 31"
+        hex_data = '''6161002222222222222222352222222235222222227f1222238000222222
+3c2222226161616161616161007f03010061616122222222616161616161
+61616161000001006161612222''' 
+        #hex_data = "b3 b3 01 00 b3 b4 b3 b3 b3 b3 b3 b3 b3 b3 b3 b3 b3 b3 a6 b3 b3 b3 b3 b3  b3 b3 b3 b3 b3 bb b3 b3 b3 31 b3 b3 b3 b3 b3 b3  b3 bb b3 b3 b3 31"
         #hex_data = '''61 a7 be a7 a7 07 aa aa aa aa e9 aa aa 7f 7f 7f 7f 7f ff 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f
 #7f 7f 7f 77 7f 00 00 01 00 7f 7f 7f 7f 7f 7f
 #7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f

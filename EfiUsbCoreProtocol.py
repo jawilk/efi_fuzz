@@ -188,9 +188,9 @@ def check_usb_meta_len(ql, length):
 def hook_AllocateBuffer(ql, address, params):
     print("**************** UsbCore hook_AllocateBuffer USB_CORE_PROTOCOL")
     print(params)
-    print(hex(address))
+    #print(hex(address))
     ptr = ql.os.heap.alloc(params['AllocSize'])
-    print(hex(ptr))
+    #print(hex(ptr))
     ql.mem.write(params["Pool"], ptr.to_bytes(8, byteorder='little'))
     return EFI_SUCCESS
 
@@ -201,9 +201,7 @@ def hook_AllocateBuffer(ql, address, params):
 def hook_FreeBuffer(ql, address, params):
     print("**************** hook_FreeBuffer USB_CORE_PROTOCOL")
     print(params)
-    print(hex(address))
     ptr = ql.os.heap.free(params['Pool'])
-    print(hex(ptr))
     return EFI_SUCCESS
 
 @dxeapi(params = {
@@ -212,8 +210,7 @@ def hook_FreeBuffer(ql, address, params):
 	"Pool": PTR(VOID)
 })
 def hook_UsbSmiRegister(ql, address, params):
-    print("**************** hook_UsbSmiRegister USB_CORE_PROTOCOL")
-    print(params)
+    #print("**************** hook_UsbSmiRegister USB_CORE_PROTOCOL")
     return EFI_SUCCESS
 	
 @dxeapi(params = {
@@ -222,8 +219,7 @@ def hook_UsbSmiRegister(ql, address, params):
 	"Pool": PTR(VOID)
 })
 def hook_UsbSmiUnregister(ql, address, params):
-    print("**************** hook_UsbSmiUnregister USB_CORE_PROTOCOL")
-    print(params)
+    #print("**************** hook_UsbSmiUnregister USB_CORE_PROTOCOL")
     return EFI_SUCCESS
     
 @dxeapi(params = {
@@ -232,8 +228,7 @@ def hook_UsbSmiUnregister(ql, address, params):
 	"Pool": PTR(VOID)
 })
 def hook_DummyHook(ql, address, params):
-    print("**************** hook_DummyHook USB_CORE_PROTOCOL")
-    print(params)
+    #print("**************** hook_DummyHook USB_CORE_PROTOCOL")
     return EFI_SUCCESS 
     
 @dxeapi(params = {
@@ -242,8 +237,7 @@ def hook_DummyHook(ql, address, params):
 	"Pool": PTR(VOID)
 })
 def hook_PciIoIoRead(ql, address, params):
-    print("**************** hook_PciIoIoRead USB_CORE_PROTOCOL")
-    print(params)
+    #print("**************** hook_PciIoIoRead USB_CORE_PROTOCOL")
     return EFI_SUCCESS
     
 @dxeapi(params = {
@@ -252,16 +246,14 @@ def hook_PciIoIoRead(ql, address, params):
 	"Pool": PTR(VOID)
 })
 def hook_PciIoIoWrite(ql, address, params):
-    print("**************** hook_PciIoIoWrite USB_CORE_PROTOCOL")
-    print(params)
+    #print("**************** hook_PciIoIoWrite USB_CORE_PROTOCOL")
     return EFI_SUCCESS     
 	
 @dxeapi(params = {
 	"Mode": UINTN,
 })
 def hook_GetMode(ql, address, params):
-    print("**************** hook_GetMode USB_CORE_PROTOCOL")
-    print(params)
+    #print("**************** hook_GetMode USB_CORE_PROTOCOL")
     mode = 0x03
     ql.mem.write(params["Mode"], mode.to_bytes(8, byteorder='little'))
     return EFI_SUCCESS  
@@ -272,13 +264,11 @@ def hook_GetMode(ql, address, params):
 	"HidDescriptor": PTR(VOID)
 })
 def hook_UsbGetHidDescriptor(ql, address, params):
-    print("**************** hook_UsbGetHidDescriptor USB_CORE_PROTOCOL")
-    print(params)
+    #print("**************** hook_UsbGetHidDescriptor USB_CORE_PROTOCOL")
     check_usb_meta_len(ql, 49)
-    data = ql.env["USB_META"][40:49]
-    new_bytes = data[:6] + bytes([0x22]) + data[7:]
-    print(new_bytes)
-    ql.mem.write(params["HidDescriptor"], new_bytes)
+    #data = ql.env["USB_META"][40:49]
+    #new_bytes = data[:6] + bytes([0x22]) + data[7:]
+    ql.mem.write(params["HidDescriptor"], ql.env["USB_META"][40:49])#new_bytes
     #random_bytes = bytes([random.randint(0, 255) for _ in range(9-1)])
     #ql.mem.write(params["HidDescriptor"], random_bytes)
     return EFI_SUCCESS 
@@ -290,13 +280,26 @@ def hook_UsbGetHidDescriptor(ql, address, params):
 	"DescriptorBuffer": UINT8
 })
 def hook_UsbGetReportDescriptor(ql, address, params):
-    print("**************** hook_UsbGetReportDescriptor USB_CORE_PROTOCOL")
-    print(params)
+    #print("**************** hook_UsbGetReportDescriptor USB_CORE_PROTOCOL")
     check_usb_meta_len(ql, 50+params["DescriptorSize"])
+    print(hex(params["DescriptorSize"]))
+    #print(ql.env["USB_META"][50:50+params["DescriptorSize"]])
     ql.mem.write(params["DescriptorBuffer"], ql.env["USB_META"][50:50+params["DescriptorSize"]])
     #random_bytes = bytes([random.randint(0, 255) for _ in range(params["DescriptorSize"]-1)])
     #ql.mem.write(params["DescriptorBuffer"], random_bytes)#ql.env["USB_META"
-    return EFI_SUCCESS    
+    return EFI_SUCCESS   
+   
+@dxeapi(params = {
+	"UsbIo": PTR(VOID),
+	"Interface": UINT8,
+	"Protocol": UINT8
+})
+def hook_UsbGetProtocolRequest(ql, address, params):
+    #print("**************** hook_UsbGetProtocolRequest USB_CORE_PROTOCOL")
+    check_usb_meta_len(ql, 65)
+    ql.mem.write(params["Protocol"], ql.env["USB_META"][65:66])
+    return EFI_SUCCESS  
+ 
 
 @dxeapi(params = {
 	"UsbIo": PTR(VOID),
@@ -307,15 +310,30 @@ def hook_UsbGetReportDescriptor(ql, address, params):
 	"Report": UINT8
 })
 def hook_UsbSetReportRequest(ql, address, params):
-    print("**************** hook_UsbSetReportRequest USB_CORE_PROTOCOL")
+    #print("**************** hook_UsbSetReportRequest USB_CORE_PROTOCOL")
     return EFI_SUCCESS    
     
 @dxeapi(params = {
 	"Timeout": UINTN
 })
 def hook_Stall(ql, address, params):
-    print("**************** hook_Stall USB_CORE_PROTOCOL")
-    return EFI_SUCCESS       
+    #print("**************** hook_Stall USB_CORE_PROTOCOL")
+    return EFI_SUCCESS 
+  
+@dxeapi(params = {
+	"Timeout": UINTN
+})
+def hook_UsbSetIdleRequest(ql, address, params):
+    print("**************** hook_UsbSetIdleRequest USB_CORE_PROTOCOL")
+    return EFI_SUCCESS     
+
+@dxeapi(params = {
+	"Timeout": UINTN
+})
+def hook_UsbSetProtocolRequest(ql, address, params):
+    print("**************** hook_UsbSetProtocolRequest USB_CORE_PROTOCOL")
+    return EFI_SUCCESS         
+        
     
 
 descriptor = {
@@ -335,10 +353,10 @@ descriptor = {
 ('UsbClearEndpointHalt', hook_DummyHook),
 ('UsbGetHidDescriptor', hook_UsbGetHidDescriptor),
 ('UsbGetReportDescriptor', hook_UsbGetReportDescriptor),
-('UsbGetProtocolRequest', hook_DummyHook),
-('UsbSetProtocolRequest', hook_DummyHook),
+('UsbGetProtocolRequest', hook_UsbGetProtocolRequest),
+('UsbSetProtocolRequest', hook_UsbSetProtocolRequest),
 ('UsbGetIdleRequest', hook_DummyHook),
-('UsbSetIdleRequest', hook_DummyHook),
+('UsbSetIdleRequest', hook_UsbSetIdleRequest),
 ('UsbGetReportRequest', hook_DummyHook),
 ('UsbSetReportRequest', hook_UsbSetReportRequest),
 ('AllocateBuffer', hook_AllocateBuffer),
