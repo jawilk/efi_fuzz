@@ -17,6 +17,7 @@ import GetPcdInfoProtocol
 import EfiGetPcdInfoProtocol
 import IOMMUProtocol
 import EfiUsbCoreProtocol
+import EfiHiiDatabaseProtocol
 from . import fault
 import os
 import binascii
@@ -66,6 +67,8 @@ class EmulationManager:
         descriptor = IOMMUProtocol.descriptor
         self.ql.loader.dxe_context.install_protocol(descriptor, 1)
         descriptor = EfiUsbCoreProtocol.descriptor
+        self.ql.loader.dxe_context.install_protocol(descriptor, 1)
+        descriptor = EfiHiiDatabaseProtocol.descriptor
         self.ql.loader.dxe_context.install_protocol(descriptor, 1)
         
         self.ql.env["USB_META"] = bytes([random.randint(0, 5) for _ in range(25)])
@@ -222,12 +225,34 @@ class EmulationManager:
     def usb_kb(self, m):
         print("!"*10, "HI KEYBOARD")        
 
-    def setup_driver_binding_start(self, a):
+    def setup_driver_binding_start(self, modules_left):
+        if modules_left != 0:
+            return False
         print("!"*10, "setup_driver_binding_start")
         
-        hex_data = '''6161002222222222222222352222222235222222227f1222238000222222
-3c2222226161616161616161007f03010061616122222222616161616161
-61616161000001006161612222''' 
+        hex_data = '''616161616161616120a65fe6ae9ede9e9e61616161a680ff9e9e9e9e9e9e
+2222226161a680ff9e9e9e9ec1be22222222222222222222222222222222
+22222222222222222222222222c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1
+c1c1c1c1c1c1c1c1c1c1a6c1c1c1c1c1c1a5c1c1c1c1c1c1c1c1c1c1c1c1
+c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1225fe6ae9ede9e9e00007fffa6
+80ff9e9e9e9ec19e2222222222222222222222222222222222222222dd22
+222222092222222222222222222222222222226161613f61610010000022
+2222222222220001000003e8b39e9e00019e9eba6400019e616161d37761
+616161222222612222222222222222222222222222616161616161616161
+222222222200ff2222222222322222222222222222222222222222b5b5b5
+b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5
+b5b5b5b5b5b5b5b5b5b5b5b522292222222222322222222222a680ff9e9e
+9e9e9e222222222222222222222222222222222222222222222222222222
+2222222222222222222222092222222222222222222222220a2222222261
+616161616120a65fe6ae9ede9e9e61616162a680222261619ebdfad37761
+5861612222226122222222223222c1c1c1c1c1c1c1c1c1c1c1c1c1b6c1c1
+c1c1c1c1222222c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1616161
+612264000000222222222222222222222222226161616161616161612222
+22222200ff22222222223222222222222222222222222222222222222222
+222222222222222222229e9e9e9e9e9e22222222222222226161613f6161
+096161612222222222222261619ebe03e8b39e9e00016161616161616161
+20a65fe6ae9ede9e9e61616161a6800b9e9e9e9e9e9e2222222222222222
+22223222222222222222222222222222222222222222222222''' 
         #hex_data = "b3 b3 01 00 b3 b4 b3 b3 b3 b3 b3 b3 b3 b3 b3 b3 b3 b3 a6 b3 b3 b3 b3 b3  b3 b3 b3 b3 b3 bb b3 b3 b3 31 b3 b3 b3 b3 b3 b3  b3 bb b3 b3 b3 31"
         #hex_data = '''61 a7 be a7 a7 07 aa aa aa aa e9 aa aa 7f 7f 7f 7f 7f ff 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f
 #7f 7f 7f 77 7f 00 00 01 00 7f 7f 7f 7f 7f 7f
@@ -246,19 +271,20 @@ class EmulationManager:
         
         # UsbBus UsbBusControllerDriverStart
         image_base = self.ql.loader.images[-1].base
-        # mouse 0x21e7 keyboard 0x38a1 mouse lenovo 0x18e4 busdxe bug 0x452d inline 0x618b (UsbBuildDescTable)
+        # mouse 0x21e7 keyboard 0x38a1 mouse lenovo 0x18e4 busdxe bug 0x452d inline 0x618b (UsbBuildDescTable) kb lenovo 0x17bc
         #address_to_call = image_base + 0x720  # 0x800021e7
         #address_to_call = image_base + 0x21e7
-        address_to_call = image_base + 0x18e4
+        #address_to_call = image_base + 0x18e4
         #address_to_call = image_base + 0x452d
+        address_to_call = image_base + 0x5424 #0x452d
         print("ADDRESS: *****************", hex(address_to_call))
         self.ql.hook_address(address=address_to_call,
                              callback=self.usb_bus_binding_start)
         
         # Breakpoints
-        #address_to_call_2 = image_base + 0x250
-        #self.ql.hook_address(address=address_to_call_2,
-         #                    callback=self.usb_mouse_lenovo)
+        address_to_call_2 = image_base + 0xa13
+        self.ql.hook_address(address=address_to_call_2,
+                            callback=self.usb_mouse_lenovo)
         #address_to_call_3 = image_base + 0x29c
         #self.ql.hook_address(address=address_to_call_3,
          #                    callback=self.usb_kb)
@@ -266,9 +292,8 @@ class EmulationManager:
         # 1st arg is fat driver, 2nd is our FakeController handle
         #args = [0x109140, 0x101000]
         # UsbMouse
-        args = [0x101074, 0x1]
+        args = [0x107159, 0x1]
         # Usb mouse 0x102a3e keyboard 0x10498a mouse lenovo 0x101074 busdxe bug 0x107159 inline 0x107174 (UsbBuildDescTable; arg is USB_DEVICE)
-        print("alloc mouse dev")
         #usb_dev_ptr = self.ql.os.heap.alloc(0x400)
         #usb_bus_ptr = self.ql.os.heap.alloc(0x40)
         #print("ptr", hex(usb_dev_ptr))
@@ -281,14 +306,33 @@ class EmulationManager:
         #args = [0x107174, 0x1]
         types = (PARAM_INTN, ) * len(args)
         targs = tuple(zip(types, args))
-
-        def __cleanup(ql: Qiling):
+        
+        def __cleanup2(ql: Qiling):
             # Give afl this func's address as fuzzing end
-            print("VALIDATED:", ql.os.heap.validate())
+            print("__cleanup2 VALIDATED:", ql.os.heap.validate())
             print("!" * 10, "END CLEANUP")
             # os.abort()
             return True
 
+        def __cleanup(ql: Qiling):
+            # Give afl this func's address as fuzzing end
+            print("__cleanup VALIDATED:", ql.os.heap.validate())
+            print("!" * 10, "END CLEANUP")
+            # os.abort()
+            
+            data = self.ql.mem.read(0x04012ecc, 0xd0)
+            print(data)
+            address_to_call2 = image_base + 0x15e2 #0x6e96 # UsbRootHubEnumeration
+            # Event, Context
+            args2 = [0x04012f7c, 0x04012ecc] # UsbRootHubEnumeration
+            targs2 = tuple(zip(types, args2))
+            cleanup_trap = self.ql.os.heap.alloc(self.ql.arch.pointersize)
+            hret = self.ql.hook_address(__cleanup2, cleanup_trap)
+            self.ql.os.fcall.call_native(address_to_call2, targs2, cleanup_trap)
+            return True
+            
+        #def call_UsbRootHubEnumeration(ql):
+        
         cleanup_trap = self.ql.os.heap.alloc(self.ql.arch.pointersize)
         hret = self.ql.hook_address(__cleanup, cleanup_trap)
         self.ql.os.fcall.call_native(address_to_call, targs, cleanup_trap)

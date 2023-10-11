@@ -24,6 +24,8 @@ EFI_USB2_HC_PROTOCOL_GET_STATE = FUNCPTR(EFI_STATUS, PTR(VOID), UINT8, BOOLEAN, 
 
 EFI_USB2_HC_PROTOCOL_SET_STATE = FUNCPTR(EFI_STATUS, PTR(VOID), UINT8, PTR(VOID), UINTN, UINTN, UINT32)
 
+EFI_USB2_HC_PROTOCOL_CONTROL_TRANSFER = FUNCPTR(EFI_STATUS, PTR(VOID), UINT8, PTR(VOID), UINTN, UINT32)
+
 EFI_USB2_HC_PROTOCOL_BULK_TRANSFER = FUNCPTR(EFI_STATUS, PTR(VOID), UINT8, PTR(VOID), UINTN, UINT32)
 
 EFI_USB2_HC_PROTOCOL_ASYNC_INTERRUPT_TRANSFER = FUNCPTR(EFI_STATUS, PTR(VOID), UINT8, PTR(VOID), UINTN, EFI_ASYNC_USB_TRANSFER_CALLBACK, PTR(VOID))
@@ -41,124 +43,183 @@ EFI_USB2_HC_PROTOCOL_CLEAR_ROOTHUB_PORT_FEATURE = FUNCPTR(EFI_STATUS, PTR(VOID),
 
 class USB2_HC_PROTOCOL(STRUCT):
 	_fields_ = [
-		('UsbControlTransfer', EFI_USB2_HC_PROTOCOL_GET_CAPABILITY),
-		('UsbBulkTransfer',	EFI_USB2_HC_PROTOCOL_RESET),
-		('UsbAsyncInterruptTransfer', EFI_USB2_HC_PROTOCOL_GET_STATE),
-		('UsbSyncInterruptTransfer', EFI_USB2_HC_PROTOCOL_SET_STATE),
-		('UsbIsochronousTransfer', EFI_USB2_HC_PROTOCOL_BULK_TRANSFER),
-		('UsbAsyncIsochronousTransfer',	EFI_USB2_HC_PROTOCOL_ASYNC_INTERRUPT_TRANSFER),
-		('UsbGetDeviceDescriptor', EFI_USB2_HC_PROTOCOL_SYNC_INTERRUPT_TRANSFER),
-		('UsbGetConfigDescriptor', EFI_USB2_HC_PROTOCOL_ISOCHRONOUS_TRANSFER),
-		('UsbGetInterfaceDescriptor', EFI_USB2_HC_PROTOCOL_ASYNC_ISOCHRONOUS_TRANSFER),
-		('UsbGetEndpointDescriptor', EFI_USB2_HC_PROTOCOL_GET_ROOTHUB_PORT_STATUS),
-		('UsbGetStringDescriptor', EFI_USB2_HC_PROTOCOL_SET_ROOTHUB_PORT_FEATURE),
-		('UsbGetSupportedLanguages', EFI_USB2_HC_PROTOCOL_CLEAR_ROOTHUB_PORT_FEATURE),
-        ('MajorRevision', UINT16),
+		('GetCapability', EFI_USB2_HC_PROTOCOL_GET_CAPABILITY),
+		('Reset',	EFI_USB2_HC_PROTOCOL_RESET),
+		('GetState', EFI_USB2_HC_PROTOCOL_GET_STATE),
+		('SetState', EFI_USB2_HC_PROTOCOL_SET_STATE),
+		('ControlTransfer', EFI_USB2_HC_PROTOCOL_CONTROL_TRANSFER),
+		('BulkTransfer',	EFI_USB2_HC_PROTOCOL_BULK_TRANSFER),
+		('AsyncInterruptTransfer', EFI_USB2_HC_PROTOCOL_ASYNC_INTERRUPT_TRANSFER),
+		('SyncInterruptTransfer', EFI_USB2_HC_PROTOCOL_ASYNC_INTERRUPT_TRANSFER),
+		('IsochronousTransfer', EFI_USB2_HC_PROTOCOL_ISOCHRONOUS_TRANSFER),
+		('AsyncIsochronousTransfer', EFI_USB2_HC_PROTOCOL_ASYNC_ISOCHRONOUS_TRANSFER),
+		('GetRootHubPortStatus', EFI_USB2_HC_PROTOCOL_GET_ROOTHUB_PORT_STATUS),
+		('SetRootHubPortFeature', EFI_USB2_HC_PROTOCOL_SET_ROOTHUB_PORT_FEATURE),
+		('ClearRootHubPortFeature', EFI_USB2_HC_PROTOCOL_CLEAR_ROOTHUB_PORT_FEATURE),
+               ('MajorRevision', UINT16),
 		('MinorRevision', UINT16)
 	]
-	
+
+@dxeapi(params = {
+	"This" : PTR(VOID),
+	"MaxSpeed" : UINT8,
+	"PortNumber" : UINT8,
+	"Is64BitCapable" : UINT8,
+})
+def hook_GetCapability(ql, address, params):
+    print("USB2_HC_PROTOCOL hook_GetCapability")
+    max_speed = 0xc0
+    print(hex(params["MaxSpeed"]))
+    ql.mem.write(params["MaxSpeed"], max_speed.to_bytes(1, byteorder='little'))
+    ql.mem.write(params["PortNumber"], b'\x01')#max_speed.to_bytes(8, byteorder='little'))
+    ql.mem.write(params["Is64BitCapable"], b'\x01')#max_speed.to_bytes(8, byteorder='little'))
+    return EFI_SUCCESS
+    
 @dxeapi(params = {
 	"SkuId" : UINT
 })
-def hook_UsbControlTransfer(ql, address, params):
-	pass
+def hook_Reset(ql, address, params):
+    print("USB2_HC_PROTOCOL hook_Reset")
+    return EFI_SUCCESS
+    
+@dxeapi(params = {
+	"SkuId" : UINT
+})
+def hook_GetState(ql, address, params):
+    print("USB2_HC_PROTOCOL hook_GetState")
+    return EFI_SUCCESS
+    
+@dxeapi(params = {
+	"SkuId" : UINT
+})
+def hook_SetState(ql, address, params):
+    print("USB2_HC_PROTOCOL hook_SetState")
+    return EFI_SUCCESS
+    
+@dxeapi(params = {
+	"This" : PTR(VOID),
+	"DeviceAddress" : UINT8,
+	"DeviceSpeed" : UINT8,
+	"MaximumPacketLength" : UINTN,
+	"Request" : PTR(VOID),
+	"TransferDirection" : UINTN,
+	"Data" : PTR(VOID),
+	"DataLength" : PTR(UINTN),
+	"TimeOut" : UINTN,
+	"Translator" : PTR(VOID),
+	"TransferResult" : UINT32,
+})
+def hook_ControlTransfer(ql, address, params):
+    print("USB2_HC_PROTOCOL hook_ControlTransfer")
+    print(params)
+    data = ql.mem.read(params["Request"], 8)
+    print("data", data)
+    length = ql.mem.read(params["DataLength"], 8)
+    length = int.from_bytes(length, byteorder='little')
+    print("len", length)
+    random_bytes = bytes([random.randint(1, 10) for _ in range(length)])
+    print(random_bytes)
+    ql.mem.write(params["Data"], random_bytes)
+    return EFI_SUCCESS
+    
+@dxeapi(params = {
+	"SkuId" : UINT
+})
+def hook_BulkTransfer(ql, address, params):
+    print("USB2_HC_PROTOCOL hook_BulkTransfer")
+    return EFI_SUCCESS
+   
+@dxeapi(params = {
+	"SkuId" : UINT
+})
+def hook_AsyncInterruptTransfer(ql, address, params):
+    print("USB2_HC_PROTOCOL hook_AsyncInterruptTransfer")
+    return EFI_SUCCESS
+   
+@dxeapi(params = {
+	"SkuId" : UINT
+})
+def hook_SyncInterruptTransfer(ql, address, params):
+    print("USB2_HC_PROTOCOL hook_SyncInterruptTransfer")
+    return EFI_SUCCESS
 
 @dxeapi(params = {
 	"SkuId" : UINT
 })
+def hook_IsochronousTransfer(ql, address, params):
+    print("USB2_HC_PROTOCOL hook_IsochronousTransfer")
+    return EFI_SUCCESS
 
-def hook_UsbBulkTransfer(ql, address, params):
-	pass
+@dxeapi(params = {
+	"This" : PTR(VOID),
+	"PortNumber" : UINT8,
+	"PortStatus" : PTR(VOID),
+})
+def hook_GetRootHubPortStatus(ql, address, params):
+    print("USB2_HC_PROTOCOL hook_GetRootHubPortStatus")
+    status = 0x00100001
+    ql.mem.write(params["PortStatus"], status.to_bytes(4, byteorder='little'))
+    data = ql.mem.read(params["PortStatus"], 4)
+    print("data", data)
+    return EFI_SUCCESS
+
+@dxeapi(params = {
+	"This" : PTR(VOID),
+	"PortNumber" : UINT8,
+	"PortStatus" : PTR(VOID),
+})
+def hook_SetRootHubPortFeature(ql, address, params):
+    print("USB2_HC_PROTOCOL hook_SetRootHubPortFeature")
+    return EFI_SUCCESS    
+    
+@dxeapi(params = {
+	"This" : PTR(VOID),
+	"PortNumber" : UINT8,
+	"PortStatus" : PTR(VOID),
+})
+def hook_ClearRootHubPortFeature(ql, address, params):
+    print("USB2_HC_PROTOCOL hook_ClearRootHubPortFeature")
+    return EFI_SUCCESS  
+    
+@dxeapi(params = {
+	"SkuId" : UINT
+})
+def hook_MajorRevision(ql, address, params):
+    print("USB2_HC_PROTOCOL hook_MajorRevision")
+    return EFI_SUCCESS
 
 @dxeapi(params = {
 	"SkuId" : UINT
 })
-
-def hook_UsbAsyncInterruptTransfer(ql, address, params):
-	pass
-
+def hook_MinorRevision(ql, address, params):
+    print("USB2_HC_PROTOCOL hook_MinorRevision")
+    return EFI_SUCCESS
+    
 @dxeapi(params = {
 	"SkuId" : UINT
 })
-def hook_UsbSyncInterruptTransfer(ql, address, params):
-	pass
-
-@dxeapi(params = {
-	"SkuId" : UINT
-})
-def hook_UsbIsochronousTransfer(ql, address, params):
-	pass
-
-@dxeapi(params = {
-	"SkuId" : UINT
-})
-def hook_UsbAsyncIsochronousTransfer(ql, address, params):
-	pass
-
-@dxeapi(params = {
-	"SkuId" : UINT
-})
-def hook_UsbGetDeviceDescriptor(ql, address, params):
-	pass
-
-@dxeapi(params = {
-	"SkuId" : UINT
-})
-def hook_UsbGetConfigDescriptor(ql, address, params):
-	pass
-
-@dxeapi(params = {
-	"SkuId" : UINT
-})
-def hook_UsbGetInterfaceDescriptor(ql, address, params):
-	pass
-
-@dxeapi(params = {
-	"SkuId" : UINT
-})
-def hook_UsbGetEndpointDescriptor(ql, address, params):
-	pass
-
-@dxeapi(params = {
-	"SkuId" : UINT
-})
-def hook_UsbGetStringDescriptor(ql, address, params):
-	pass
-
-@dxeapi(params = {
-	"SkuId" : UINT
-})
-def hook_UsbGetSupportedLanguages(ql, address, params):
-	pass
-
-
-@dxeapi(params = {
-	"SkuId" : UINT
-})
-def hook_UsbAsyncTransferCallback(ql, address, params):
-	pass
-
-@dxeapi(params = {
-	"TokenNumber" : UINT
-})
-def hook_UsbAsyncInterruptTransfer(ql, address, params):
-	pass
+def hook_DummyHook(ql, address, params):
+    print("USB2_HC_PROTOCOL hook_DummyHook")
+    return EFI_SUCCESS
 
 descriptor = {
 	"guid" : "3e745226-9818-45b6-a2ac-d7cd0e8ba2bc",
 	"struct" : USB2_HC_PROTOCOL,
 	"fields" : (
-		('UsbControlTransfer', hook_UsbControlTransfer),
-		('UsbBulkTransfer', hook_UsbBulkTransfer),
-		('UsbAsyncInterruptTransfer', hook_UsbAsyncInterruptTransfer),
-		('UsbSyncInterruptTransfer', hook_UsbSyncInterruptTransfer),
-		('UsbIsochronousTransfer', hook_UsbIsochronousTransfer),
-		('UsbAsyncIsochronousTransfer', hook_UsbAsyncIsochronousTransfer),
-		('UsbGetDeviceDescriptor', hook_UsbGetDeviceDescriptor),
-		('UsbGetConfigDescriptor', hook_UsbGetConfigDescriptor),
-		('UsbGetInterfaceDescriptor', hook_UsbGetInterfaceDescriptor),
-		('UsbGetEndpointDescriptor', hook_UsbGetEndpointDescriptor),
-		('UsbGetStringDescriptor', hook_UsbGetStringDescriptor),
-        ('UsbGetSupportedLanguages', hook_UsbGetSupportedLanguages),
+		('GetCapability', hook_GetCapability),
+		('Reset',	hook_Reset),
+		('GetState', hook_GetState),
+		('SetState', hook_SetState),
+		('ControlTransfer', hook_ControlTransfer),
+		('BulkTransfer',	hook_BulkTransfer),
+		('AsyncInterruptTransfer', hook_AsyncInterruptTransfer),
+		('SyncInterruptTransfer', hook_SyncInterruptTransfer),
+		('IsochronousTransfer', hook_IsochronousTransfer),
+		('AsyncIsochronousTransfer', hook_AsyncInterruptTransfer),
+		('GetRootHubPortStatus', hook_GetRootHubPortStatus),
+		('SetRootHubPortFeature', hook_SetRootHubPortFeature),
+		('ClearRootHubPortFeature', hook_ClearRootHubPortFeature),
+               ('MajorRevision', hook_MajorRevision),
+		('MinorRevision', hook_MinorRevision)
 	)
 }

@@ -332,8 +332,35 @@ def hook_UsbSetIdleRequest(ql, address, params):
 })
 def hook_UsbSetProtocolRequest(ql, address, params):
     print("**************** hook_UsbSetProtocolRequest USB_CORE_PROTOCOL")
+    return EFI_SUCCESS   
+    
+@dxeapi(params = {
+	"Timeout": UINTN
+})
+def hook_RemoveUsbDevice(ql, address, params):
+    print("**************** hook_RemoveUsbDevice USB_CORE_PROTOCOL")
+    return EFI_SUCCESS   
+
+@dxeapi(params = {
+	"Timeout": UINTN
+})
+def hook_EnterCriticalSection(ql, address, params):
+    print("**************** hook_EnterCriticalSection USB_CORE_PROTOCOL")
+    return EFI_SUCCESS  
+    
+@dxeapi(params = {
+	"Timeout": UINTN
+})
+def hook_LeaveCriticalSection(ql, address, params):
+    print("**************** hook_LeaveCriticalSection USB_CORE_PROTOCOL")
+    return EFI_SUCCESS   
+       
+@dxeapi(params = {
+	"Timeout": UINTN
+})
+def hook_IsCsmEnabled(ql, address, params):
+    print("**************** hook_IsCsmEnabled USB_CORE_PROTOCOL")
     return EFI_SUCCESS         
-        
     
 
 descriptor = {
@@ -392,13 +419,13 @@ descriptor = {
 ('RemovePeriodicTimer', hook_DummyHook),
 ('InsertPeriodicTimerProvider', hook_DummyHook),
 ('RemovePeriodicTimerProvider', hook_DummyHook),
-('EnterCriticalSection', hook_DummyHook),
-('LeaveCriticalSection', hook_DummyHook),
+('EnterCriticalSection', hook_EnterCriticalSection),
+('LeaveCriticalSection', hook_LeaveCriticalSection),
 ('DispatchHcCallback', hook_DummyHook),
 ('RegisterUsbBindingProtocol', hook_DummyHook),
 ('GetUsbDevices', hook_DummyHook),
 ('InsertUsbDevice', hook_DummyHook),
-('RemoveUsbDevice', hook_DummyHook),
+('RemoveUsbDevice', hook_RemoveUsbDevice),
 ('ConnectUsbDevices', hook_DummyHook),
 ('DisconnectUsbDevices', hook_DummyHook),
 ('RegisterNonSmmCallback', hook_DummyHook),
@@ -412,7 +439,7 @@ descriptor = {
 ('RemoveAddressConvertTable', hook_DummyHook),
 ('AddressConvert', hook_DummyHook),
 ('SchedularConnection', hook_DummyHook),
-('IsCsmEnabled', hook_DummyHook),
+('IsCsmEnabled', hook_IsCsmEnabled),
 ('GetSwSmiPort', hook_DummyHook),
 ('RegisterLegacyFreeHcCallback', hook_DummyHook),
 ('UnregisterLegacyFreeHcCallback', hook_DummyHook),

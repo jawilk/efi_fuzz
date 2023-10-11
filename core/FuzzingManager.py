@@ -121,7 +121,7 @@ class FuzzingManager(EmulationManager):
         image_base = self.ql.loader.images[-1].base
         # mouse 0x21e7 keyboard 0x38a1
         #address_to_call = image_base + 0x21e7  # 0x800021e7
-        address_to_call = image_base + 0x18e4
+        address_to_call = image_base + 0x17bc
         # FatDriverBindingStart (from ghidra)
         #target = self.ql.loader.images[-1].path
         #pe = pefile.PE(target, fast_load=True)
