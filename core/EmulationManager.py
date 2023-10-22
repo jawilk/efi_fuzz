@@ -19,6 +19,7 @@ import IOMMUProtocol
 import EfiUsbCoreProtocol
 import EfiHiiDatabaseProtocol
 import EfiPciIoProtocol
+from qiling.os.uefi import guids_db
 from . import fault
 import os
 import binascii
@@ -225,7 +226,7 @@ class EmulationManager:
         self.ql.arch.regs.rax = 0x40128f6#byte_representation
         #print(byte_representation)
         #self.ql.mem.write(self.ql.arch.regs.rbp-0x28, byte_representation)
-        #self.ql.os.emit_context()
+        self.ql.os.emit_context()
         #self.ql.os.emit_stack(0x40)
         
     def usb_kb(self, m):
@@ -236,21 +237,8 @@ class EmulationManager:
             return False
         print("!"*10, "setup_driver_binding_start")
         
-        hex_data = '''010e02020202020202020202020202020202020202020202020202020202
-020202020202020202020202020202020202020202020202020202020202
-020202020202020202020202020202020202020202020202020202020202
-020202020202020200020202020202020202020202020202020202020202
-020202020202020202020202020202020202020202020202020202020202
-020202020202020202020202020202020202020202020202020202020202
-020202020202020202020202020202020202020202020202020202020202
-020202020202020202020202020202020202020202020202020202020202
-020202020202020202020202020202020202020202020202020202020202
-020202020202020202020202020202020202020202020202020202020202
-020202020202020202020202020202020902020202020202020202020202
-020202020202020202020202020202020202020202020202020202020202
-0202df010202020202020202020202020202020202020202020202020202
-02fa200000000ee284
-0101'''
+        hex_data = '''e80300006161616161616161616161616161616161616161616161616161
+61616161616161616161616161616161610a'''
         
         #hex_data = '''e80300006161616161616161616161616161616161616161616161616161
 #61616161616161616161616161616161610a''' # Usb Bus Bug?
@@ -272,18 +260,18 @@ class EmulationManager:
         
         # UsbBus UsbBusControllerDriverStart
         image_base = self.ql.loader.images[-1].base
-        # mouse 0x21e7 keyboard 0x38a1 mouse lenovo 0x18e4 busdxe bug 0x452d inline 0x618b (UsbBuildDescTable) kb lenovo 0x17bc
+        # mouse 0x21e7 keyboard 0x38a1 mouse lenovo 0x18e4 busdxe bug 0x452d inline 0x618b (UsbBuildDescTable) kb lenovo 0x17bc busdxe bug edk2 noinline_4 0x66ad
         #address_to_call = image_base + 0x720  # 0x800021e7
         #address_to_call = image_base + 0x21e7
         #address_to_call = image_base + 0x18e4
         #address_to_call = image_base + 0x452d
-        address_to_call = image_base + 0x66ad #0x66ad #0x452d
+        address_to_call = image_base + 0x4236 #0x66ad #0x452d
         print("ADDRESS: *****************", hex(address_to_call))
         self.ql.hook_address(address=address_to_call,
                              callback=self.usb_bus_binding_start)
         
         # Breakpoints
-        address_to_call_2 = image_base + 0x66ad
+        address_to_call_2 = image_base + 0x1e2d
         self.ql.hook_address(address=address_to_call_2,
                             callback=self.usb_mouse_lenovo)
         #address_to_call_3 = image_base + 0x29c
@@ -293,7 +281,8 @@ class EmulationManager:
         # 1st arg is fat driver, 2nd is our FakeController handle
         #args = [0x109140, 0x101000]
         # UsbMouse
-        args = [0x107cf4, 0x1]
+        #args = [0x107cf4, 0x1]
+        args = [self.ql.loader.entry_point, 0x1]
         # Usb mouse 0x102a3e keyboard 0x10498a mouse lenovo 0x101074 busdxe bug 0x107159 inline 0x107174 (UsbBuildDescTable; arg is USB_DEVICE)
         #usb_dev_ptr = self.ql.os.heap.alloc(0x400)
         #usb_bus_ptr = self.ql.os.heap.alloc(0x40)
@@ -323,7 +312,7 @@ class EmulationManager:
             
             data = self.ql.mem.read(0x04012ecc, 0xd0)
             print(data)
-            address_to_call2 = image_base + 0x285e #0x6e96 # UsbRootHubEnumeration
+            address_to_call2 = image_base + 0x27a1 #0x6e96 # UsbRootHubEnumeration
             # Event, Context
             args2 = [0x04013004, 0x04012f54] # UsbRootHubEnumeration(Event, *Context)
             targs2 = tuple(zip(types, args2))
@@ -382,11 +371,31 @@ class EmulationManager:
         self.ql.os.fcall.call_native(address_to_call, targs, cleanup_trap)
         return True
         '''
-
+        
+    def dump_driver_start(self, modules_left):
+        if modules_left != 0:
+            return False
+        print("!"*10, "dump_driver_start")
+        EfiDriverBindingProtocolGuid = "18A031AB-B443-4D1A-A5C0-0C09261E9F71".lower()
+        handle = None
+        for handle, guid_dic in self.ql.loader.dxe_context.protocols.items():
+            if EfiDriverBindingProtocolGuid in guid_dic:
+                print("FOUND", guid_dic, hex(guid_dic[EfiDriverBindingProtocolGuid]))
+                handle = hex(guid_dic[EfiDriverBindingProtocolGuid])
+                break
+        print(type(handle))
+        # +8 because StartDriver is 2nd pointer in driver binding array
+        ptr = self.ql.mem.read(int(handle, 16)+8, 8)
+        print("DriverBindingStart @", hex(int.from_bytes(ptr, byteorder='little')))
+        return True
+        
     def run(self, end=None, timeout=0, mode='normal', **kwargs):
         if mode == 'normal':
             self.ql.os.on_module_exit.append(self.setup_driver_binding_start)
-
+            
+        if mode == 'dump_driver_start':
+            self.ql.os.on_module_exit.append(self.dump_driver_start)
+        
         # self.ql.os.on_module_enter.append(self.entry)
         if end:
             end = callbacks.set_end_of_execution_callback(self.ql, end)

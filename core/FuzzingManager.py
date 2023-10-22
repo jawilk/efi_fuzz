@@ -121,7 +121,7 @@ class FuzzingManager(EmulationManager):
         image_base = self.ql.loader.images[-1].base
         # mouse 0x21e7 keyboard 0x38a1
         #address_to_call = image_base + 0x21e7  # 0x800021e7
-        address_to_call = image_base + 0x66ad
+        address_to_call = image_base + 0x4236
         # FatDriverBindingStart (from ghidra)
         #target = self.ql.loader.images[-1].path
         #pe = pefile.PE(target, fast_load=True)
@@ -142,7 +142,7 @@ class FuzzingManager(EmulationManager):
         # 1st arg is fat driver, 2nd is our FakeController handle
         #args = [0x109140, 0x101000]
         # Usb mouse 0x102a3e keyboard 0x10498a
-        args = [0x107cf4, 0x1]
+        args = [self.ql.loader.entry_point, 0x1]
         types = (PARAM_INTN, ) * len(args)
         targs = tuple(zip(types, args))
 
@@ -159,7 +159,7 @@ class FuzzingManager(EmulationManager):
             # Give afl this func's address as fuzzing end
             print("__cleanup VALIDATED:", ql.os.heap.validate())
             print("!" * 10, "END CLEANUP")
-            address_to_call2 = image_base + 0x285e #0x6e96 # UsbRootHubEnumeration
+            address_to_call2 = image_base + 0x27a1 #0x6e96 # UsbRootHubEnumeration
             # Event, Context
             args2 = [0x04013004, 0x04012f54] # UsbRootHubEnumeration(Event, *Context)
             targs2 = tuple(zip(types, args2))
