@@ -188,9 +188,13 @@ def check_usb_meta_len(ql, length):
 def hook_AllocateBuffer(ql, address, params):
     print("**************** UsbCore hook_AllocateBuffer USB_CORE_PROTOCOL")
     print(params)
-    #print(hex(address))
+    print(hex(params["Pool"]))
+    print(hex(params["AllocSize"]))    
     ptr = ql.os.heap.alloc(params['AllocSize'])
-    #print(hex(ptr))
+    print(hex(ptr))
+    #pool = ql.mem.read(params["Pool"], 16)
+    #pool = int.from_bytes(pool, 'little')
+    #print("pool", hex(pool))
     ql.mem.write(params["Pool"], ptr.to_bytes(8, byteorder='little'))
     return EFI_SUCCESS
 
@@ -228,7 +232,7 @@ def hook_UsbSmiUnregister(ql, address, params):
 	"Pool": PTR(VOID)
 })
 def hook_DummyHook(ql, address, params):
-    #print("**************** hook_DummyHook USB_CORE_PROTOCOL")
+    print("**************** hook_DummyHook USB_CORE_PROTOCOL")
     return EFI_SUCCESS 
     
 @dxeapi(params = {
@@ -362,6 +366,50 @@ def hook_IsCsmEnabled(ql, address, params):
     print("**************** hook_IsCsmEnabled USB_CORE_PROTOCOL")
     return EFI_SUCCESS         
     
+@dxeapi(params = {
+	"Timeout": UINTN
+})
+def hook_InsertAddressConvertTable(ql, address, params):
+    print("**************** hook_InsertAddressConvertTable USB_CORE_PROTOCOL")
+    return EFI_SUCCESS     
+ 
+@dxeapi(params = {
+	"Timeout": UINTN
+})
+def hook_RegisterLegacyFreeHcCallback(ql, address, params):
+    print("**************** hook_RegisterLegacyFreeHcCallback USB_CORE_PROTOCOL")
+    return EFI_SUCCESS 
+    
+@dxeapi(params = {
+	"Timeout": UINTN
+})
+def hook_ModuleRegistration(ql, address, params):
+    print("**************** hook_ModuleRegistration USB_CORE_PROTOCOL")
+    return EFI_SUCCESS  
+ 
+@dxeapi(params = {
+	"Timeout": UINTN
+})
+def hook_AddressConvert(ql, address, params):
+    print("**************** hook_AddressConvert USB_CORE_PROTOCOL")
+    return EFI_SUCCESS   
+    
+@dxeapi(params = {
+	"Timeout": UINTN
+})
+def hook_RemoveAddressConvertTable(ql, address, params):
+    print("**************** hook_RemoveAddressConvertTable USB_CORE_PROTOCOL")
+    return EFI_SUCCESS 
+    
+@dxeapi(params = {
+	"InSmm": BOOLEAN
+})
+def hook_IsInSmm(ql, address, params):
+    print("**************** hook_IsInSmm USB_CORE_PROTOCOL")
+    in_smm = 0
+    ql.mem.write(params["InSmm"], in_smm.to_bytes(1, byteorder='little'))
+    return EFI_SUCCESS    
+    
 
 descriptor = {
     "guid" : "c965c76a-d71e-4e66-ab06-c6230d528425",
@@ -433,15 +481,15 @@ descriptor = {
 ('CheckDeviceDetached', hook_DummyHook),
 ('CpuWbinvd', hook_DummyHook),
 ('IsKbcExist', hook_DummyHook),
-('ModuleRegistration', hook_DummyHook),
-('IsInSmm', hook_DummyHook),
-('InsertAddressConvertTable', hook_DummyHook),
-('RemoveAddressConvertTable', hook_DummyHook),
-('AddressConvert', hook_DummyHook),
+('ModuleRegistration', hook_ModuleRegistration),
+('IsInSmm', hook_IsInSmm),
+('InsertAddressConvertTable', hook_InsertAddressConvertTable),
+('RemoveAddressConvertTable', hook_RemoveAddressConvertTable),
+('AddressConvert', hook_AddressConvert),
 ('SchedularConnection', hook_DummyHook),
 ('IsCsmEnabled', hook_IsCsmEnabled),
 ('GetSwSmiPort', hook_DummyHook),
-('RegisterLegacyFreeHcCallback', hook_DummyHook),
+('RegisterLegacyFreeHcCallback', hook_RegisterLegacyFreeHcCallback),
 ('UnregisterLegacyFreeHcCallback', hook_DummyHook),
 ('SyncKbdLed', hook_DummyHook),
 ('RegisterHidDescriptor', hook_DummyHook),

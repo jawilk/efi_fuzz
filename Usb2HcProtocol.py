@@ -59,6 +59,11 @@ class USB2_HC_PROTOCOL(STRUCT):
                ('MajorRevision', UINT16),
 		('MinorRevision', UINT16)
 	]
+	
+def check_usb_meta_len(ql, length):
+	diff = length - len(ql.env["USB_META"])
+	if diff > 0:
+		ql.env["USB_META"] = ql.env["USB_META"] + b'\x00' * diff
 
 @dxeapi(params = {
 	"This" : PTR(VOID),
@@ -68,7 +73,7 @@ class USB2_HC_PROTOCOL(STRUCT):
 })
 def hook_GetCapability(ql, address, params):
     print("USB2_HC_PROTOCOL hook_GetCapability")
-    max_speed = 0xc0
+    max_speed = 0xcc
     print(hex(params["MaxSpeed"]))
     ql.mem.write(params["MaxSpeed"], max_speed.to_bytes(1, byteorder='little'))
     ql.mem.write(params["PortNumber"], b'\x01')#max_speed.to_bytes(8, byteorder='little'))
@@ -111,15 +116,20 @@ def hook_SetState(ql, address, params):
 })
 def hook_ControlTransfer(ql, address, params):
     print("USB2_HC_PROTOCOL hook_ControlTransfer")
-    print(params)
+    #print(params)
     data = ql.mem.read(params["Request"], 8)
     print("data", data)
     length = ql.mem.read(params["DataLength"], 8)
     length = int.from_bytes(length, byteorder='little')
-    print("len", length)
-    random_bytes = bytes([random.randint(1, 10) for _ in range(length)])
-    print(random_bytes)
-    ql.mem.write(params["Data"], random_bytes)
+    print("length", length)
+    if length > 1000:
+        return EFI_SUCCESS
+    check_usb_meta_len(ql, length)
+    #print("len", length)
+    #random_bytes = bytes([random.randint(1, 10) for _ in range(length)])
+    #print(random_bytes)
+    print("RANDOMMMMM", ql.env["USB_META"][:length])
+    ql.mem.write(params["Data"], ql.env["USB_META"][:length])
     return EFI_SUCCESS
     
 @dxeapi(params = {
