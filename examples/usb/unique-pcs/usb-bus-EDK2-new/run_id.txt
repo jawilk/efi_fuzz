@@ -1,0 +1,6 @@
+id:000007,sig:01,src:000003+000000,time:6009794,execs:221221,op:splice,rep:32
+id:000012,sig:06,src:000014,time:25758612,execs:762432,op:arith8,pos:17,val:-9
+id:000019,sig:01,src:000023,time:77641884,execs:1801596,op:flip2,pos:4
+id:000003,sig:06,src:000003+000002,time:4923737,execs:189751,op:splice,rep:64
+id:000018,sig:06,src:000022,time:71017039,execs:1649851,op:flip32,pos:16
+id:000001,sig:01,src:000006+000005,time:562009,execs:26722,op:splice,rep:16

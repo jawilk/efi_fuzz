@@ -1,0 +1,5 @@
+id:000005,sig:01,src:000006+000017,time:782493,execs:48476,op:splice,rep:8
+id:000002,sig:01,src:000006+000005,time:387210,execs:20352,op:splice,rep:8
+id:000000,sig:06,src:000000,time:163354,execs:5581,op:int32,pos:0,val:+1000
+id:000011,sig:06,src:000006+000026,time:63312761,execs:889177,op:splice,rep:64
+id:000014,sig:06,src:000021,time:31238749,execs:1108943,op:arith8,pos:17,val:-28
