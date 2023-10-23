@@ -97,8 +97,8 @@ class FuzzingManager(EmulationManager):
     # ['smm_callout'] # @TODO: maybe enable 'memory' sanitizer as well?
     # DEFAULT_SANITIZERS = ['memory']
 
-    def __init__(self, target_module, extra_modules=None):
-        super().__init__(target_module, extra_modules)
+    def __init__(self, target_module, extra_modules=None, afl_crash_file=None):
+        super().__init__(target_module, extra_modules, afl_crash_file)
 
         # self.sanitizers = FuzzingManager.DEFAULT_SANITIZERS
         # By default we prefer to abort to notify AFL of potential crashes.

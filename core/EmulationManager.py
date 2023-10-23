@@ -37,10 +37,15 @@ class EmulationManager:
     # ['smm_callout', 'smm', 'uninitialized'] # @TODO: add 'memory' sanitizer as default
     DEFAULT_SANITIZERS = ['memory']
 
-    def __init__(self, target_module, extra_modules=None):
+    def __init__(self, target_module, extra_modules=None, afl_crash_file=None):
 
         if extra_modules is None:
             extra_modules = []
+        if afl_crash_file:
+            self.load_afl_crash_file(afl_crash_file)
+        else:
+            self.afl_crash_data = "aaaaaaaaaaaaaaaaaaaaaa"
+            self.afl_crash_file = None
 
         self.ql = Qiling(extra_modules + [target_module],
                          ".", verbose=QL_VERBOSE.DEBUG)#DEBUG)#DISABLED
@@ -81,6 +86,11 @@ class EmulationManager:
         # Load fat image into the env
         #self.load_fat_image(
          #   "/home/wj/temp/uefi/test-fat/dummy_esp.img")
+         
+    def load_afl_crash_file(self, path):
+        with open(path, "rb") as file:
+            self.afl_crash_data = file.read()
+        self.afl_crash_file = os.path.basename(path)
 
     def load_fat_image(self, path):
         with open(path, "rb") as file:
@@ -237,26 +247,12 @@ class EmulationManager:
             return False
         print("!"*10, "setup_driver_binding_start")
         
-        hex_data = '''e80300006161616161616161616161616161616161616161616161616161
-61616161616161616161616161616161610a'''
+        #hex_data = '''e102e0030303030303030c03e80203030303030303030303002603038000
+#24038001080000616161'''
         
         #hex_data = '''e80300006161616161616161616161616161616161616161616161616161
 #61616161616161616161616161616161610a''' # Usb Bus Bug?
-        #hex_data = "b3 b3 01 00 b3 b4 b3 b3 b3 b3 b3 b3 b3 b3 b3 b3 b3 b3 a6 b3 b3 b3 b3 b3  b3 b3 b3 b3 b3 bb b3 b3 b3 31 b3 b3 b3 b3 b3 b3  b3 bb b3 b3 b3 31"
-        #hex_data = '''61 a7 be a7 a7 07 aa aa aa aa e9 aa aa 7f 7f 7f 7f 7f ff 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f
-#7f 7f 7f 77 7f 00 00 01 00 7f 7f 7f 7f 7f 7f
-#7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f
-#7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f
-#7f 7f 75 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f
-#7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f 7f
-#8f 8f 8f 8f 8f 8f 8f 8f 8f 97 8f 8f 8f 8f 8f 8f
-#8f 8f 8f 8e 8f 8f 8f 8f 8f 8f 8f 8f 8f 8f 8f
-#8f 8f 8f 8f 8f 8f 0a 61'''
-        hex_data = hex_data.replace(" ", "")
-        #print(hex_data)
-        # Parse the hexadecimal string and create a byte array
-        byte_array = bytes.fromhex(hex_data)
-        self.ql.env["USB_META"] = byte_array
+        self.ql.env["USB_META"] = self.afl_crash_data
         
         # UsbBus UsbBusControllerDriverStart
         image_base = self.ql.loader.images[-1].base
@@ -265,13 +261,13 @@ class EmulationManager:
         #address_to_call = image_base + 0x21e7
         #address_to_call = image_base + 0x18e4
         #address_to_call = image_base + 0x452d
-        address_to_call = image_base + 0x4236 #0x66ad #0x452d
+        address_to_call = image_base + 0x1a3c #0x66ad #0x452d #0x4236
         print("ADDRESS: *****************", hex(address_to_call))
         self.ql.hook_address(address=address_to_call,
                              callback=self.usb_bus_binding_start)
         
         # Breakpoints
-        address_to_call_2 = image_base + 0x1e2d
+        address_to_call_2 = image_base + 0x1614
         self.ql.hook_address(address=address_to_call_2,
                             callback=self.usb_mouse_lenovo)
         #address_to_call_3 = image_base + 0x29c
@@ -310,15 +306,15 @@ class EmulationManager:
             print("!" * 10, "END CLEANUP")
             # os.abort()
             
-            data = self.ql.mem.read(0x04012ecc, 0xd0)
-            print(data)
-            address_to_call2 = image_base + 0x27a1 #0x6e96 # UsbRootHubEnumeration
+            #data = self.ql.mem.read(0x04012ecc, 0xd0)
+            #print(data)
+            address_to_call2 = image_base + 0x27a1 #0x285e #0x6e96 # UsbRootHubEnumeration
             # Event, Context
             args2 = [0x04013004, 0x04012f54] # UsbRootHubEnumeration(Event, *Context)
             targs2 = tuple(zip(types, args2))
             cleanup_trap = self.ql.os.heap.alloc(self.ql.arch.pointersize)
             hret = self.ql.hook_address(__cleanup2, cleanup_trap)
-            self.ql.os.fcall.call_native(address_to_call2, targs2, cleanup_trap)
+            #self.ql.os.fcall.call_native(address_to_call2, targs2, cleanup_trap)
             return True
             
         #def call_UsbRootHubEnumeration(ql):
@@ -384,7 +380,7 @@ class EmulationManager:
                 handle = hex(guid_dic[EfiDriverBindingProtocolGuid])
                 break
         print(type(handle))
-        # +8 because StartDriver is 2nd pointer in driver binding array
+        # +8 because StartDriver is 2nd pointer in driver binding struct
         ptr = self.ql.mem.read(int(handle, 16)+8, 8)
         print("DriverBindingStart @", hex(int.from_bytes(ptr, byteorder='little')))
         return True
@@ -410,9 +406,20 @@ class EmulationManager:
         # try:
             # Don't collect coverage information unless explicitly requested by the user.
         with conditional(self.coverage_file, cov_utils.collect_coverage(self.ql, 'drcov', self.coverage_file)):
-            self.ql.run(end=end, timeout=timeout)
-        # except fault.ExitEmulation:
-            # pass
-
+            try:
+                self.ql.run(end=end, timeout=timeout)
+            except:
+                print("EXCEPTION")
+                print("PC", hex(self.ql.arch.regs.arch_pc))
+                if self.afl_crash_file:
+                    pcs_file = "unique-pcs/pcs.txt"
+                    with open(pcs_file, "r") as file:
+                        file_contents = file.read()
+                    if hex(self.ql.arch.regs.arch_pc) not in file_contents:
+                        with open(pcs_file, "a") as f:
+                            f.write(hex(self.ql.arch.regs.arch_pc) + '\n')
+                        with open("unique-pcs/run_id.txt", "a") as f:
+                            f.write(self.afl_crash_file + '\n')
+    
         print("EMU END run")
         print(mode)

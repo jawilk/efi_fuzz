@@ -89,7 +89,7 @@ class QlSanitizedMemoryHeap():
             return 0
 
         addr = self.heap.alloc(size + self.CANARY_SIZE * 2)
-        print("ALLOC:", hex(addr))
+        print("ALLOC:", hex(addr+self.CANARY_SIZE))
         canary_begins = addr
         canary_ends = canary_begins + self.CANARY_SIZE - 1
 

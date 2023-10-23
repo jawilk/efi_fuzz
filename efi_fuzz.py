@@ -44,8 +44,11 @@ auto_int = functools.partial(int, base=0)
 
 def create_emulator(cls, args):
     print("nvram_file", args.nvram_file)
-    emu = cls(args.target, args.extra_modules)
-
+    if args.afl_crash:
+        emu = cls(args.target, args.extra_modules, args.afl_crash)
+    else:
+        emu = cls(args.target, args.extra_modules)
+        
     # Load NVRAM environment from the provided Pickle.
     if args.nvram_file:
         emu.load_nvram(args.nvram_file)
@@ -127,6 +130,8 @@ if __name__ == "__main__":
     parser.add_argument("-r", "--rom-file", help="Path to the UEFI ROM file")
     parser.add_argument("-x", "--extra-modules",
                         help="Extra modules to load", nargs='+')
+                        
+    parser.add_argument("-a", "--afl-crash", help="Path to an afl crash file")
 
     subparsers = parser.add_subparsers(help="Fuzzing modes", dest="mode")
 

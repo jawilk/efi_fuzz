@@ -68,7 +68,7 @@ class memory_sanitizer(base_sanitizer):
             return 0
 
         self.ql.os.set_api("SetMem", my_SetMem)
-
+        
     def _enable_sanitized_heap(self, fault_rate=0):
         """
         Enables the sanitized heap, currently capable of detecting:
@@ -80,18 +80,18 @@ class memory_sanitizer(base_sanitizer):
         - pool invalid frees
         - pool use-after-free
         """
-
+        
         def bo_handler(ql, access, addr, size, value):
             print("***************************************************")
             print(f'bo_handler - {access}, {hex(addr)}, {size}, {value}')
             print("***")
-            os.abort()
+            os.exit()
 
         def oob_handler(ql, access, addr, size, value):
             print("***************************************************")
             print(f'oob_handler - {access}, {hex(addr)}, {size}, {value}')
             print("***")
-            os.abort()
+            os.exit()
 
         def uaf_handler(ql, access, addr, size, value):
             print("***************************************************")
@@ -106,13 +106,13 @@ class memory_sanitizer(base_sanitizer):
             #ql.os.emit_hexdump(addr, data2)
             #ql.os.emit_disasm(pc, data)
             #ql.os.emit_stack()
-            os.abort()
+            os.exit()
 
         def bad_free_handler(ql, addr):
             print("***************************************************")
             print(f'bad_free_handler - {hex(addr)}')
             print("***")
-            os.abort()
+            os.exit()
 
         heap = QlSanitizedMemoryHeap(self.ql, self.ql.os.heap, fault_rate=fault_rate)
         heap.oob_handler = oob_handler
