@@ -60,10 +60,10 @@ class USB2_HC_PROTOCOL(STRUCT):
 		('MinorRevision', UINT16)
 	]
 	
-def check_usb_meta_len(ql, length):
-	diff = length - len(ql.env["USB_META"])
+def check_fuzz_data_len(ql, length):
+	diff = length - len(ql.env["FUZZ_DATA"])
 	if diff > 0:
-		ql.env["USB_META"] = ql.env["USB_META"] + b'\x00' * diff
+		ql.env["FUZZ_DATA"] = ql.env["FUZZ_DATA"] + b'\x00' * diff
 
 @dxeapi(params = {
 	"This" : PTR(VOID),
@@ -124,12 +124,12 @@ def hook_ControlTransfer(ql, address, params):
     print("length", length)
     if length > 1000:
         return EFI_SUCCESS
-    check_usb_meta_len(ql, length)
+    check_fuzz_data_len(ql, length)
     #print("len", length)
     #random_bytes = bytes([random.randint(1, 10) for _ in range(length)])
     #print(random_bytes)
-    print("RANDOMMMMM", ql.env["USB_META"][:length])
-    ql.mem.write(params["Data"], ql.env["USB_META"][:length])
+    print("RANDOMMMMM", ql.env["FUZZ_DATA"][:length])
+    ql.mem.write(params["Data"], ql.env["FUZZ_DATA"][:length])
     return EFI_SUCCESS
     
 @dxeapi(params = {

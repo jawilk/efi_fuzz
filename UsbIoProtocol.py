@@ -81,10 +81,10 @@ class EndpointDescriptor(STRUCT):
 		('Interval', UINT8),
 	]
 
-def check_usb_meta_len(ql, length):
-	diff = length - len(ql.env["USB_META"])
+def check_fuzz_data_len(ql, length):
+	diff = length - len(ql.env["FUZZ_DATA"])
 	if diff > 0:
-		ql.env["USB_META"] = ql.env["USB_META"] + b'\x00' * diff
+		ql.env["FUZZ_DATA"] = ql.env["FUZZ_DATA"] + b'\x00' * diff
 	
 @dxeapi(params = {
 	"UsbIo" : PTR(VOID),
@@ -146,9 +146,9 @@ def hook_UsbGetDeviceDescriptor(ql, address, params):
 def hook_UsbGetConfigDescriptor(ql, address, params):
     #random_bytes = bytes([random.randint(0, 255) for _ in range(9)])
     # print(random_bytes[4])
-    check_usb_meta_len(ql, 9)
-    ql.mem.write(params["ConfigDesc"], ql.env["USB_META"][:9])
-    #print("TotalLength:", int.from_bytes(ql.env["USB_META"][:9][2:4], byteorder='little'))
+    check_fuzz_data_len(ql, 9)
+    ql.mem.write(params["ConfigDesc"], ql.env["FUZZ_DATA"][:9])
+    #print("TotalLength:", int.from_bytes(ql.env["FUZZ_DATA"][:9][2:4], byteorder='little'))
     return EFI_SUCCESS
 
 @dxeapi(params = {
@@ -160,10 +160,10 @@ def hook_UsbGetInterfaceDescriptor(ql, address, params):
     #ql.mem.write(address, ctypes.byref(interface_descriptor), ctypes.sizeof(interface_descriptor))
     #random_bytes = bytes([random.randint(3, 10) for _ in range(9)])
     # print(random_bytes[4])
-    check_usb_meta_len(ql, 18)
-    #data = ql.env["USB_META"][9:18]
+    check_fuzz_data_len(ql, 18)
+    #data = ql.env["FUZZ_DATA"][9:18]
     #new_bytes = data[:4] + bytes([0x3]) + data[5:]
-    ql.mem.write(params["InterfaceDescriptor"], ql.env["USB_META"][9:18])
+    ql.mem.write(params["InterfaceDescriptor"], ql.env["FUZZ_DATA"][9:18])
     return EFI_SUCCESS
 
 
@@ -179,8 +179,8 @@ def hook_UsbGetEndpointDescriptor(ql, address, params):
     #byte_array[3] = 0x03
     #random_bytes = bytes(byte_array)
     endpoint_index = 7 * params["EndpointIndex"]
-    check_usb_meta_len(ql, 25 + endpoint_index)
-    data = ql.env["USB_META"][18+endpoint_index:25+endpoint_index]
+    check_fuzz_data_len(ql, 25 + endpoint_index)
+    data = ql.env["FUZZ_DATA"][18+endpoint_index:25+endpoint_index]
     new_bytes = data[:2] + bytes([0x80]) + bytes([0x03]) + data[2+2:]
     ql.mem.write(params["EndpointDescriptor"], new_bytes)
     return EFI_SUCCESS

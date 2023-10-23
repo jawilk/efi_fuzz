@@ -175,10 +175,10 @@ class EFI_USB_CORE_PROTOCOL(STRUCT):
 ('UnregisterHidDescriptor', EFI_USB_CORE_UNREGISTER_HID_DESCRIPTOR)
 	]
 	
-def check_usb_meta_len(ql, length):
-	diff = length - len(ql.env["USB_META"])
+def check_fuzz_data_len(ql, length):
+	diff = length - len(ql.env["FUZZ_DATA"])
 	if diff > 0:
-		ql.env["USB_META"] = ql.env["USB_META"] + b'\x00' * diff	
+		ql.env["FUZZ_DATA"] = ql.env["FUZZ_DATA"] + b'\x00' * diff	
 	
 @dxeapi(params = {
 	"AllocSize": UINTN,
@@ -269,10 +269,10 @@ def hook_GetMode(ql, address, params):
 })
 def hook_UsbGetHidDescriptor(ql, address, params):
     #print("**************** hook_UsbGetHidDescriptor USB_CORE_PROTOCOL")
-    check_usb_meta_len(ql, 49)
-    #data = ql.env["USB_META"][40:49]
+    check_fuzz_data_len(ql, 49)
+    #data = ql.env["FUZZ_DATA"][40:49]
     #new_bytes = data[:6] + bytes([0x22]) + data[7:]
-    ql.mem.write(params["HidDescriptor"], ql.env["USB_META"][40:49])#new_bytes
+    ql.mem.write(params["HidDescriptor"], ql.env["FUZZ_DATA"][40:49])#new_bytes
     #random_bytes = bytes([random.randint(0, 255) for _ in range(9-1)])
     #ql.mem.write(params["HidDescriptor"], random_bytes)
     return EFI_SUCCESS 
@@ -285,12 +285,12 @@ def hook_UsbGetHidDescriptor(ql, address, params):
 })
 def hook_UsbGetReportDescriptor(ql, address, params):
     #print("**************** hook_UsbGetReportDescriptor USB_CORE_PROTOCOL")
-    check_usb_meta_len(ql, 50+params["DescriptorSize"])
+    check_fuzz_data_len(ql, 50+params["DescriptorSize"])
     print(hex(params["DescriptorSize"]))
-    #print(ql.env["USB_META"][50:50+params["DescriptorSize"]])
-    ql.mem.write(params["DescriptorBuffer"], ql.env["USB_META"][50:50+params["DescriptorSize"]])
+    #print(ql.env["FUZZ_DATA"][50:50+params["DescriptorSize"]])
+    ql.mem.write(params["DescriptorBuffer"], ql.env["FUZZ_DATA"][50:50+params["DescriptorSize"]])
     #random_bytes = bytes([random.randint(0, 255) for _ in range(params["DescriptorSize"]-1)])
-    #ql.mem.write(params["DescriptorBuffer"], random_bytes)#ql.env["USB_META"
+    #ql.mem.write(params["DescriptorBuffer"], random_bytes)#ql.env["FUZZ_DATA"
     return EFI_SUCCESS   
    
 @dxeapi(params = {
@@ -300,8 +300,8 @@ def hook_UsbGetReportDescriptor(ql, address, params):
 })
 def hook_UsbGetProtocolRequest(ql, address, params):
     #print("**************** hook_UsbGetProtocolRequest USB_CORE_PROTOCOL")
-    check_usb_meta_len(ql, 65)
-    ql.mem.write(params["Protocol"], ql.env["USB_META"][65:66])
+    check_fuzz_data_len(ql, 65)
+    ql.mem.write(params["Protocol"], ql.env["FUZZ_DATA"][65:66])
     return EFI_SUCCESS  
  
 
