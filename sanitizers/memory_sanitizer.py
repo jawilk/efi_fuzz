@@ -85,13 +85,13 @@ class memory_sanitizer(base_sanitizer):
             print("***************************************************")
             print(f'bo_handler - {access}, {hex(addr)}, {size}, {value}')
             print("***")
-            os.exit()
+            raise Exception("bo_handler")
 
         def oob_handler(ql, access, addr, size, value):
             print("***************************************************")
             print(f'oob_handler - {access}, {hex(addr)}, {size}, {value}')
             print("***")
-            os.exit()
+            raise Exception("oob_handler")
 
         def uaf_handler(ql, access, addr, size, value):
             print("***************************************************")
@@ -106,13 +106,13 @@ class memory_sanitizer(base_sanitizer):
             #ql.os.emit_hexdump(addr, data2)
             #ql.os.emit_disasm(pc, data)
             #ql.os.emit_stack()
-            os.exit()
+            raise Exception("uaf_handler")
 
         def bad_free_handler(ql, addr):
             print("***************************************************")
             print(f'bad_free_handler - {hex(addr)}')
             print("***")
-            os.exit()
+            raise Exception("bad_free_handler")
 
         heap = QlSanitizedMemoryHeap(self.ql, self.ql.os.heap, fault_rate=fault_rate)
         heap.oob_handler = oob_handler

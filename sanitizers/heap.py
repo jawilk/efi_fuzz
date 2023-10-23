@@ -4,6 +4,7 @@
 #
 
 import random
+import os
 from enum import Enum
 
 from qiling import Qiling
@@ -83,6 +84,10 @@ class QlSanitizedMemoryHeap():
         pass
 
     def alloc(self, size: int):
+        print("alloc Size", size)
+        if size == 0x480000:
+            raise Exception("ABORT ALLOC FAT")
+
         chance = random.randint(1, 100)
         if chance <= self.fault_rate:
             # Fail the allocation.
