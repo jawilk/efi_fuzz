@@ -45,7 +45,8 @@ def start_afl(_ql: Qiling, user_data):
         """
         print("!"*10, "AFL VALIDATE CRASH")
         # print(hex(_ql.arch.regs.arch_pc))
-
+        if _ql.arch.regs.arch_pc == 0x40000b8:
+            return False
         if hasattr(_ql.os.heap, "validate"):
             #print("!"*10, "AFL IS HEAP VALIDATE CRASH")
             if not _ql.os.heap.validate():
@@ -55,7 +56,7 @@ def start_afl(_ql: Qiling, user_data):
                 return True
         #else:
             #print("!"*10, "AFL IS NO HEAP VALIDATE CRASH")
-        #print(hex(_ql.arch.regs.arch_pc))
+        print(hex(_ql.arch.regs.arch_pc))
         #print(_ql.env["END"])
         if _ql.env["END"]:
             print("IS END FUZZ RUN")

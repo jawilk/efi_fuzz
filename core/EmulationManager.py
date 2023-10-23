@@ -269,9 +269,9 @@ class EmulationManager:
                              callback=self.usb_bus_binding_start)
         
         # Breakpoints
-        address_to_call_2 = image_base + 0xe62
-        self.ql.hook_address(address=address_to_call_2,
-                            callback=self.breakpoint)
+        #address_to_call_2 = image_base + 0xa55
+        #self.ql.hook_address(address=address_to_call_2,
+         #                   callback=self.breakpoint)
 
         ### USB            
         # Usb mouse 0x102a3e keyboard 0x10498a mouse lenovo 0x101074 busdxe bug 0x107159 inline 0x107174 (UsbBuildDescTable; arg is USB_DEVICE)        
