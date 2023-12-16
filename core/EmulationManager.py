@@ -1,3 +1,4 @@
+import time
 import pickle
 import rom
 from qiling import Qiling
@@ -22,6 +23,7 @@ import EfiPciIoProtocol
 import EfiDiskIoProtocol
 import EfiDiskIo2Protocol
 import EfiBlockIoProtocol
+import EfiSimplePointerProtocol
 from qiling.os.uefi import guids_db
 from . import fault
 import os
@@ -54,8 +56,8 @@ class EmulationManager:
                          ".", verbose=QL_VERBOSE.DEBUG)#DEBUG)#DISABLED
 
         # Load fat image into the env
-        self.load_fat_image(
-            "dummy_esp.img")
+        #self.load_fat_image(
+         #   "dummy_esp.img")
 
         # callbacks.init_callbacks(self.ql)
 
@@ -92,24 +94,29 @@ class EmulationManager:
         self.ql.loader.dxe_context.install_protocol(descriptor, 1)
         descriptor = EfiBlockIoProtocol.descriptor
         self.ql.loader.dxe_context.install_protocol(descriptor, 1)
+        descriptor = EfiSimplePointerProtocol.descriptor
+        self.ql.loader.dxe_context.install_protocol(descriptor, 1)
         
     def load_afl_crash_file(self, path):
         with open(path, "rb") as file:
             self.afl_crash_data = file.read()
         self.afl_crash_file = os.path.basename(path)
 
-    def load_fat_image(self, path):
-        with open(path, "rb") as file:
-            self.ql.env["FUZZ_DATA"] = file.read()
+    #def load_fat_image(self, path):
+     #   with open('compute-afl/queue/'+path, "rb") as file:
+      #      self.ql.env["FUZZ_DATA"] = file.read()
+
+    def load_input_data(self):
+        self.ql.env["counter"] = 0
+        folder_path = 'compute-afl/queue'
+        files = [f for f in os.listdir(folder_path) if os.path.isfile(os.path.join(folder_path, f))] 
+        self.input_files_path = files[1:]
 
     def load_nvram(self, nvram_file):
         # Load NVRAM environment.
         with open(nvram_file, 'rb') as nvram:
             self.ql.env.update(pickle.load(nvram))
             # self.ql.env['FaultType'] = b'\x0e'
-            # a = self.ql.env['FaultType']
-            # v = int.from_bytes(a, byteorder='big', signed=False)
-            # print("VALUE:", v)
 
 
     def load_rom(self, rom_file):
@@ -201,26 +208,12 @@ class EmulationManager:
         size param is in r9
         &buf pointer is in RSP+0x28
         """
-        print("!"*10, "START DISKIO READ BLOCKS")
-
         # Fetch func args
         offset = self.ql.arch.regs.r8
         size = self.ql.arch.regs.r9
         buf_addr = self.ql.mem.read(
             self.ql.arch.regs.rsp + 0x28, 8)
         buf_addr = int.from_bytes(buf_addr, 'little')
-
-        print("offset:", hex(offset))
-        print("size:", hex(size))
-        print("buf addr:", buf_addr, hex(buf_addr))
-        # self.ql.os.emit_stack(12)
-        # pc = self.ql.arch.regs.arch_pc
-        # data = self.ql.mem.read(pc, size=64)
-        # self.ql.os.emit_disasm(pc, data, 32)
-        # self.ql.mem.write(buf_addr, self.fat_image[offset:offset+size])
-        # print("FAT_META ", self.ql.env["FAT_META"])
-        # print("FAT_META len", len(self.ql.env["FAT_META"]))
-        # print("data:", self.ql.env["FAT_META"][offset:offset+size])
 
         # Write fuzz data onto stack
         self.ql.mem.write(
@@ -230,41 +223,36 @@ class EmulationManager:
         
     def usb_bus_binding_start(self, m):
         print("!"*10, "USB DRIVER BINDING START")
-        #self.ql.os.emit_context()
-        # print(hex(self.ql.arch.regs.arch_pc))
         
     def breakpoint(self, m):
-        print("!"*10, "BREAKPOINT !!!!!!")
-        #data = self.ql.mem.read(0x507ff00, 0x50)
-        #print(data)
-        #value = 0x4012184
-        #byte_representation = value.to_bytes(4, byteorder='little')
-        #self.ql.mem.write(self.ql.arch.regs.rbp-0x28, byte_representation)
-        #self.ql.os.emit_context()
-        #self.ql.os.emit_stack(0x40)
+        print("!"*10, "BREAKPOINT")
         
-    def usb_kb(self, m):
-        print("!"*10, "HI KEYBOARD")        
-
+    def restart(self, m):
+        print("RESTART")
+        if self.ql.env["counter"] == len(self.input_files_path):
+            return
+        path = self.input_files_path[self.ql.env["counter"]]
+        self.load_fat_image(path)
+        self.ql.env["counter"] += 1
+        args = [0x1078b9, 0x1]
+        types = (PARAM_INTN, ) * len(args)
+        targs = tuple(zip(types, args))
+        self.ql.os.fcall.call_native(self.ql.env["address_to_call"], targs, None)
+        
     def setup_driver_binding_start(self, modules_left):
         if modules_left != 0:
             return False
-        print("!"*10, "setup_driver_binding_start")
         
-        #hex_data = '''e80300006161616161616161616161616161616161616161616161616161
-#61616161616161616161616161616161610a''' # Usb Bus Bug?
+        # Fat
+        #self.load_input_data()
         
-        #self.ql.env["FUZZ_DATA"] = self.afl_crash_data
-        
+        self.ql.env["FUZZ_DATA"] = self.afl_crash_data
         # UsbBus UsbBusControllerDriverStart
         image_base = self.ql.loader.images[-1].base
+
         # mouse 0x21e7 keyboard 0x38a1 mouse lenovo 0x18e4 busdxe bug 0x452d inline 0x618b (UsbBuildDescTable) kb lenovo 0x17bc busdxe bug edk2 noinline_4 0x66ad
-        #address_to_call = image_base + 0x720  # 0x800021e7
-        #address_to_call = image_base + 0x21e7
-        #address_to_call = image_base + 0x18e4
-        #address_to_call = image_base + 0x452d
-        address_to_call = image_base + 0xc89 #0x1a3c (insyde) #0x66ad #0x452d #0x4236
-        print("ADDRESS: *****************", hex(address_to_call))
+        address_to_call = self.get_driver_start_addr() #0xc89 (fat inline) #0x1a3c (insyde) #0x66ad #0x452d #0x4236
+        #self.ql.env["address_to_call"] = address_to_call
         self.ql.hook_address(address=address_to_call,
                              callback=self.usb_bus_binding_start)
         
@@ -272,74 +260,59 @@ class EmulationManager:
         #address_to_call_2 = image_base + 0xa55
         #self.ql.hook_address(address=address_to_call_2,
          #                   callback=self.breakpoint)
-
         ### USB            
-        # Usb mouse 0x102a3e keyboard 0x10498a mouse lenovo 0x101074 busdxe bug 0x107159 inline 0x107174 (UsbBuildDescTable; arg is USB_DEVICE)        
-        #args = [self.ql.loader.entry_point, 0x1]
+        args = [self.ql.loader.entry_point, 0x1]
         ### FAT
         # 1st arg is fat driver, 2nd is our FakeController handle
-        args = [0x1078b9, 0x1]
+        #args = [0x1078b9, 0x1]
         
         types = (PARAM_INTN, ) * len(args)
         targs = tuple(zip(types, args))
         
-        # On call FatOpenDevice
-        #self.ql.hook_address(address=0x001041d2, callback=self.fat_open_device)
-        # After call FatAllocateVolume
-        #self.ql.hook_address(address=0x001037fa, callback=self.fat_allocate_volume)
-        # DiskIo read blocks
-        #self.ql.hook_address(address=0x001012a6,
-         #                    callback=self.disk_io_read_blocks)
-        # self.ql.arch.regs.arch_pc = address_to_call
-        # self.ql.uc.emu_start(address_to_call, timeout=0, count=1)
-        
         def __cleanup2(ql: Qiling):
-            # Give afl this func's address as fuzzing end
-            print("__cleanup2 VALIDATED:", ql.os.heap.validate())
-            print("!" * 10, "END CLEANUP2")
+            # Give afl this func's address as fuzzing end address
             # os.abort()
             return True
 
         def __cleanup(ql: Qiling):
             # Give afl this func's address as fuzzing end
-            print("__cleanup VALIDATED:", ql.os.heap.validate())
-            print("!" * 10, "END CLEANUP")
-            # os.abort()
-            
-            #data = self.ql.mem.read(0x04012ecc, 0xd0)
-            #print(data)
-            address_to_call2 = image_base + 0x27a1 #0x285e #0x6e96 # UsbRootHubEnumeration
+            address_to_call2 = image_base + 0x27a1 #0x27a1 #0x285e #0x6e96 # UsbRootHubEnumeration
             # Event, Context
-            args2 = [0x04013004, 0x04012f54] # UsbRootHubEnumeration(Event, *Context)
+            args2 = [0x0401304c, 0x04012f9c] # UsbRootHubEnumeration(Event, *Context)
             targs2 = tuple(zip(types, args2))
             cleanup_trap = self.ql.os.heap.alloc(self.ql.arch.pointersize)
-            hret = self.ql.hook_address(__cleanup2, cleanup_trap)
+            self.ql.hook_address(__cleanup2, cleanup_trap)
             #self.ql.os.fcall.call_native(address_to_call2, targs2, cleanup_trap)
             return True
             
         cleanup_trap = self.ql.os.heap.alloc(self.ql.arch.pointersize)
-        hret = self.ql.hook_address(__cleanup, cleanup_trap)
+        self.ql.hook_address(address=cleanup_trap, callback=__cleanup)
+        #self.ql.hook_address(address=image_base+0xe62, callback=self.restart)
+        
+        def __cleanup(ql: Qiling):
+            return True
+        cleanup_trap = self.ql.os.heap.alloc(self.ql.arch.pointersize)
+        address_to_call = self.get_driver_start_addr()
+        args = [self.ql.loader.entry_point, 0x1]
         self.ql.os.fcall.call_native(address_to_call, targs, cleanup_trap)
-        
-        print("VALIDATED:", self.ql.os.heap.validate())
-        
         return True
         
-    def dump_driver_start(self, modules_left):
-        if modules_left != 0:
-            return False
-        print("!"*10, "dump_driver_start")
+    def get_driver_start_addr(self):
         EfiDriverBindingProtocolGuid = "18A031AB-B443-4D1A-A5C0-0C09261E9F71".lower()
         handle = None
         for handle, guid_dic in self.ql.loader.dxe_context.protocols.items():
             if EfiDriverBindingProtocolGuid in guid_dic:
-                print("FOUND", guid_dic, hex(guid_dic[EfiDriverBindingProtocolGuid]))
                 handle = hex(guid_dic[EfiDriverBindingProtocolGuid])
                 break
-        print(type(handle))
         # +8 because StartDriver is 2nd pointer in driver binding struct
         ptr = self.ql.mem.read(int(handle, 16)+8, 8)
         print("DriverBindingStart @", hex(int.from_bytes(ptr, byteorder='little')))
+        return int.from_bytes(ptr, byteorder='little')
+        
+    def dump_driver_start(self, modules_left):
+        if modules_left != 0:
+            return False
+        self.get_driver_start_addr()
         return True
         
     def run(self, end=None, timeout=0, mode='normal', **kwargs):
@@ -349,16 +322,10 @@ class EmulationManager:
         if mode == 'dump_driver_start':
             self.ql.os.on_module_exit.append(self.dump_driver_start)
         
-        # self.ql.os.on_module_enter.append(self.entry)
         if end:
             end = callbacks.set_end_of_execution_callback(self.ql, end)
 
         self._enable_sanitizers()
-
-        #image_base = self.ql.loader.images[-1].base
-        #address_to_call_2 = image_base + 0x7d68
-        #self.ql.hook_address(address=address_to_call_2,
-                             #callback=self.usb_mouse_lenovo)
 
         # try:
             # Don't collect coverage information unless explicitly requested by the user.
@@ -377,6 +344,6 @@ class EmulationManager:
                             f.write(hex(self.ql.arch.regs.arch_pc) + '\n')
                         with open("unique-pcs/run_id.txt", "a") as f:
                             f.write(self.afl_crash_file + '\n')
-    
+        print(hex(self.ql.arch.regs.arch_pc))
         print("EMU END run")
         print(mode)

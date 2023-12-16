@@ -46,15 +46,8 @@ class EFI_HII_DATABASE_PROTOCOL(STRUCT):
 	"KeyboardLayout": PTR(VOID)
 })
 def hook_GetKeyboardLayout(ql, address, params):
-    print("**************** hook_GetKeyboardLayout EFI_HII_DATABASE_PROTOCOL")
-    print(params)
-    print(hex(ql.arch.regs.arch_pc))
-    #ptr = ql.os.heap.alloc(1)
-    #params["KeyboardLayout"] = ptr
-    #data = 0x1
-    #ql.mem.write(ptr, data.to_bytes(8, byteorder='little'))
+    print("EFI_HII_DATABASE_PROTOCOL hook_GetKeyboardLayout")
     rand = random.choice([EFI_SUCCESS, EFI_BUFFER_TOO_SMALL])
-    print("-------------", rand)
     return rand
     
 @dxeapi(params = {
@@ -62,7 +55,6 @@ def hook_GetKeyboardLayout(ql, address, params):
 	"KeyGuid": UINTN,
 })
 def hook_SetKeyboardLayout(ql, address, params):
-    print("**************** hook_SetKeyboardLayout EFI_HII_DATABASE_PROTOCOL")
     return EFI_SUCCESS  
     
 @dxeapi(params = {
@@ -71,7 +63,6 @@ def hook_SetKeyboardLayout(ql, address, params):
 	"Pool": PTR(VOID)
 })
 def hook_DummyHook(ql, address, params):
-    print("**************** hook_DummyHook EFI_HII_DATABASE_PROTOCOL")
     return EFI_SUCCESS 
 		
 descriptor = {    "guid" : "ef9fc172-a1b2-4693-b327-6d32fc416042",

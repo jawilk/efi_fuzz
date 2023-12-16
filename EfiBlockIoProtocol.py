@@ -26,7 +26,6 @@ class EFI_BLOCK_IO_PROTOCOL(STRUCT):
 	"Pool": PTR(VOID)
 })
 def hook_DummyHook(ql, address, params):
-    print("**************** hook_DummyHook EFI_BLOCK_IO_PROTOCOL")
     return EFI_SUCCESS 
     
 @dxeapi(params = {
@@ -37,7 +36,6 @@ def hook_DummyHook(ql, address, params):
         "Buffer": PTR(VOID)
 })
 def hook_ReadDisk(ql, address, params):
-    print("**************** hook_ReadDisk EFI_BLOCK_IO_PROTOCOL")
     return EFI_SUCCESS 
 
 descriptor = {

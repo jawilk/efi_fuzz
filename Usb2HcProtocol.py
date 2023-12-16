@@ -74,10 +74,9 @@ def check_fuzz_data_len(ql, length):
 def hook_GetCapability(ql, address, params):
     print("USB2_HC_PROTOCOL hook_GetCapability")
     max_speed = 0xcc
-    print(hex(params["MaxSpeed"]))
     ql.mem.write(params["MaxSpeed"], max_speed.to_bytes(1, byteorder='little'))
-    ql.mem.write(params["PortNumber"], b'\x01')#max_speed.to_bytes(8, byteorder='little'))
-    ql.mem.write(params["Is64BitCapable"], b'\x01')#max_speed.to_bytes(8, byteorder='little'))
+    ql.mem.write(params["PortNumber"], b'\x01')
+    ql.mem.write(params["Is64BitCapable"], b'\x01')
     return EFI_SUCCESS
     
 @dxeapi(params = {
@@ -116,19 +115,12 @@ def hook_SetState(ql, address, params):
 })
 def hook_ControlTransfer(ql, address, params):
     print("USB2_HC_PROTOCOL hook_ControlTransfer")
-    #print(params)
     data = ql.mem.read(params["Request"], 8)
-    print("data", data)
     length = ql.mem.read(params["DataLength"], 8)
     length = int.from_bytes(length, byteorder='little')
-    print("length", length)
     if length > 1000:
         return EFI_SUCCESS
     check_fuzz_data_len(ql, length)
-    #print("len", length)
-    #random_bytes = bytes([random.randint(1, 10) for _ in range(length)])
-    #print(random_bytes)
-    print("RANDOMMMMM", ql.env["FUZZ_DATA"][:length])
     ql.mem.write(params["Data"], ql.env["FUZZ_DATA"][:length])
     return EFI_SUCCESS
     

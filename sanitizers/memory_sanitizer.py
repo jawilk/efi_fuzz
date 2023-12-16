@@ -130,6 +130,6 @@ class memory_sanitizer(base_sanitizer):
 
     def enable(self):
         print("MEMORY SANITIZER ENABLED")
-        self._enable_sanitized_CopyMem()
-        self._enable_sanitized_SetMem()
+        #self._enable_sanitized_CopyMem()
+        #self._enable_sanitized_SetMem()
         self._enable_sanitized_heap()

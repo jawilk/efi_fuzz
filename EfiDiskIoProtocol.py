@@ -26,7 +26,7 @@ class EFI_DISK_IO_PROTOCOL(STRUCT):
 	"Pool": PTR(VOID)
 })
 def hook_DummyHook(ql, address, params):
-    print("**************** hook_DummyHook EFI_DISK_IO_PROTOCOL")
+    print("EFI_DISK_IO_PROTOCOL hook_DummyHook")
     return EFI_SUCCESS 
     
 @dxeapi(params = {
@@ -37,7 +37,7 @@ def hook_DummyHook(ql, address, params):
         "Buffer": PTR(VOID)
 })
 def hook_ReadDisk(ql, address, params):
-    print("**************** hook_ReadDisk EFI_DISK_IO_PROTOCOL")
+    print("EFI_DISK_IO_PROTOCOL hook_ReadDisk")
     ql.mem.write(params["Buffer"], ql.env["FUZZ_DATA"][params["Offset"]:params["Offset"]+params["BufferSize"]])
     return EFI_SUCCESS 
 

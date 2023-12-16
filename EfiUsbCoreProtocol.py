@@ -186,15 +186,8 @@ def check_fuzz_data_len(ql, length):
 	"Pool": PTR(VOID)
 })
 def hook_AllocateBuffer(ql, address, params):
-    print("**************** UsbCore hook_AllocateBuffer USB_CORE_PROTOCOL")
-    print(params)
-    print(hex(params["Pool"]))
-    print(hex(params["AllocSize"]))    
+    print("EFI_USB_CORE_PROTOCOL hook_AllocateBuffer")
     ptr = ql.os.heap.alloc(params['AllocSize'])
-    print(hex(ptr))
-    #pool = ql.mem.read(params["Pool"], 16)
-    #pool = int.from_bytes(pool, 'little')
-    #print("pool", hex(pool))
     ql.mem.write(params["Pool"], ptr.to_bytes(8, byteorder='little'))
     return EFI_SUCCESS
 
@@ -203,8 +196,7 @@ def hook_AllocateBuffer(ql, address, params):
 	"Pool": PTR(VOID)
 })
 def hook_FreeBuffer(ql, address, params):
-    print("**************** hook_FreeBuffer USB_CORE_PROTOCOL")
-    print(params)
+    print("EFI_USB_CORE_PROTOCOL hook_FreeBuffer")
     ptr = ql.os.heap.free(params['Pool'])
     return EFI_SUCCESS
 
@@ -214,7 +206,6 @@ def hook_FreeBuffer(ql, address, params):
 	"Pool": PTR(VOID)
 })
 def hook_UsbSmiRegister(ql, address, params):
-    #print("**************** hook_UsbSmiRegister USB_CORE_PROTOCOL")
     return EFI_SUCCESS
 	
 @dxeapi(params = {
@@ -223,7 +214,6 @@ def hook_UsbSmiRegister(ql, address, params):
 	"Pool": PTR(VOID)
 })
 def hook_UsbSmiUnregister(ql, address, params):
-    #print("**************** hook_UsbSmiUnregister USB_CORE_PROTOCOL")
     return EFI_SUCCESS
     
 @dxeapi(params = {
@@ -232,7 +222,7 @@ def hook_UsbSmiUnregister(ql, address, params):
 	"Pool": PTR(VOID)
 })
 def hook_DummyHook(ql, address, params):
-    print("**************** hook_DummyHook USB_CORE_PROTOCOL")
+    print("EFI_USB_CORE_PROTOCOL hook_DummyHook")
     return EFI_SUCCESS 
     
 @dxeapi(params = {
@@ -241,7 +231,6 @@ def hook_DummyHook(ql, address, params):
 	"Pool": PTR(VOID)
 })
 def hook_PciIoIoRead(ql, address, params):
-    #print("**************** hook_PciIoIoRead USB_CORE_PROTOCOL")
     return EFI_SUCCESS
     
 @dxeapi(params = {
@@ -250,14 +239,12 @@ def hook_PciIoIoRead(ql, address, params):
 	"Pool": PTR(VOID)
 })
 def hook_PciIoIoWrite(ql, address, params):
-    #print("**************** hook_PciIoIoWrite USB_CORE_PROTOCOL")
     return EFI_SUCCESS     
 	
 @dxeapi(params = {
 	"Mode": UINTN,
 })
 def hook_GetMode(ql, address, params):
-    #print("**************** hook_GetMode USB_CORE_PROTOCOL")
     mode = 0x03
     ql.mem.write(params["Mode"], mode.to_bytes(8, byteorder='little'))
     return EFI_SUCCESS  
@@ -268,13 +255,8 @@ def hook_GetMode(ql, address, params):
 	"HidDescriptor": PTR(VOID)
 })
 def hook_UsbGetHidDescriptor(ql, address, params):
-    #print("**************** hook_UsbGetHidDescriptor USB_CORE_PROTOCOL")
     check_fuzz_data_len(ql, 49)
-    #data = ql.env["FUZZ_DATA"][40:49]
-    #new_bytes = data[:6] + bytes([0x22]) + data[7:]
-    ql.mem.write(params["HidDescriptor"], ql.env["FUZZ_DATA"][40:49])#new_bytes
-    #random_bytes = bytes([random.randint(0, 255) for _ in range(9-1)])
-    #ql.mem.write(params["HidDescriptor"], random_bytes)
+    ql.mem.write(params["HidDescriptor"], ql.env["FUZZ_DATA"][40:49])
     return EFI_SUCCESS 
  
 @dxeapi(params = {
@@ -284,13 +266,8 @@ def hook_UsbGetHidDescriptor(ql, address, params):
 	"DescriptorBuffer": UINT8
 })
 def hook_UsbGetReportDescriptor(ql, address, params):
-    #print("**************** hook_UsbGetReportDescriptor USB_CORE_PROTOCOL")
     check_fuzz_data_len(ql, 50+params["DescriptorSize"])
-    print(hex(params["DescriptorSize"]))
-    #print(ql.env["FUZZ_DATA"][50:50+params["DescriptorSize"]])
     ql.mem.write(params["DescriptorBuffer"], ql.env["FUZZ_DATA"][50:50+params["DescriptorSize"]])
-    #random_bytes = bytes([random.randint(0, 255) for _ in range(params["DescriptorSize"]-1)])
-    #ql.mem.write(params["DescriptorBuffer"], random_bytes)#ql.env["FUZZ_DATA"
     return EFI_SUCCESS   
    
 @dxeapi(params = {
@@ -299,7 +276,6 @@ def hook_UsbGetReportDescriptor(ql, address, params):
 	"Protocol": UINT8
 })
 def hook_UsbGetProtocolRequest(ql, address, params):
-    #print("**************** hook_UsbGetProtocolRequest USB_CORE_PROTOCOL")
     check_fuzz_data_len(ql, 65)
     ql.mem.write(params["Protocol"], ql.env["FUZZ_DATA"][65:66])
     return EFI_SUCCESS  
@@ -314,98 +290,84 @@ def hook_UsbGetProtocolRequest(ql, address, params):
 	"Report": UINT8
 })
 def hook_UsbSetReportRequest(ql, address, params):
-    #print("**************** hook_UsbSetReportRequest USB_CORE_PROTOCOL")
     return EFI_SUCCESS    
     
 @dxeapi(params = {
 	"Timeout": UINTN
 })
 def hook_Stall(ql, address, params):
-    #print("**************** hook_Stall USB_CORE_PROTOCOL")
     return EFI_SUCCESS 
   
 @dxeapi(params = {
 	"Timeout": UINTN
 })
 def hook_UsbSetIdleRequest(ql, address, params):
-    print("**************** hook_UsbSetIdleRequest USB_CORE_PROTOCOL")
     return EFI_SUCCESS     
 
 @dxeapi(params = {
 	"Timeout": UINTN
 })
 def hook_UsbSetProtocolRequest(ql, address, params):
-    print("**************** hook_UsbSetProtocolRequest USB_CORE_PROTOCOL")
     return EFI_SUCCESS   
     
 @dxeapi(params = {
 	"Timeout": UINTN
 })
 def hook_RemoveUsbDevice(ql, address, params):
-    print("**************** hook_RemoveUsbDevice USB_CORE_PROTOCOL")
     return EFI_SUCCESS   
 
 @dxeapi(params = {
 	"Timeout": UINTN
 })
 def hook_EnterCriticalSection(ql, address, params):
-    print("**************** hook_EnterCriticalSection USB_CORE_PROTOCOL")
     return EFI_SUCCESS  
     
 @dxeapi(params = {
 	"Timeout": UINTN
 })
 def hook_LeaveCriticalSection(ql, address, params):
-    print("**************** hook_LeaveCriticalSection USB_CORE_PROTOCOL")
     return EFI_SUCCESS   
        
 @dxeapi(params = {
 	"Timeout": UINTN
 })
 def hook_IsCsmEnabled(ql, address, params):
-    print("**************** hook_IsCsmEnabled USB_CORE_PROTOCOL")
     return EFI_SUCCESS         
     
 @dxeapi(params = {
 	"Timeout": UINTN
 })
 def hook_InsertAddressConvertTable(ql, address, params):
-    print("**************** hook_InsertAddressConvertTable USB_CORE_PROTOCOL")
     return EFI_SUCCESS     
  
 @dxeapi(params = {
 	"Timeout": UINTN
 })
 def hook_RegisterLegacyFreeHcCallback(ql, address, params):
-    print("**************** hook_RegisterLegacyFreeHcCallback USB_CORE_PROTOCOL")
     return EFI_SUCCESS 
     
 @dxeapi(params = {
 	"Timeout": UINTN
 })
 def hook_ModuleRegistration(ql, address, params):
-    print("**************** hook_ModuleRegistration USB_CORE_PROTOCOL")
     return EFI_SUCCESS  
  
 @dxeapi(params = {
 	"Timeout": UINTN
 })
 def hook_AddressConvert(ql, address, params):
-    print("**************** hook_AddressConvert USB_CORE_PROTOCOL")
     return EFI_SUCCESS   
     
 @dxeapi(params = {
 	"Timeout": UINTN
 })
 def hook_RemoveAddressConvertTable(ql, address, params):
-    print("**************** hook_RemoveAddressConvertTable USB_CORE_PROTOCOL")
     return EFI_SUCCESS 
     
 @dxeapi(params = {
 	"InSmm": BOOLEAN
 })
 def hook_IsInSmm(ql, address, params):
-    print("**************** hook_IsInSmm USB_CORE_PROTOCOL")
     in_smm = 0
     ql.mem.write(params["InSmm"], in_smm.to_bytes(1, byteorder='little'))
     return EFI_SUCCESS    

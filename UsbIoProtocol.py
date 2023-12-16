@@ -96,7 +96,7 @@ def check_fuzz_data_len(ql, length):
 	"Status": PTR(EFI_STATUS)
 })
 def hook_UsbControlTransfer(ql, address, params):
-    #("**************** hook_UsbControlTransfer")
+    print("USB_IO_PROTOCOL hook_UsbControlTransfer")
     random_bytes = bytes([random.randint(0, 255) for _ in range(params["DataLength"])])
     ql.mem.write(params["Data"], random_bytes)
     return EFI_SUCCESS
@@ -144,11 +144,8 @@ def hook_UsbGetDeviceDescriptor(ql, address, params):
 	"ConfigDesc": PTR(VOID)
 })
 def hook_UsbGetConfigDescriptor(ql, address, params):
-    #random_bytes = bytes([random.randint(0, 255) for _ in range(9)])
-    # print(random_bytes[4])
     check_fuzz_data_len(ql, 9)
     ql.mem.write(params["ConfigDesc"], ql.env["FUZZ_DATA"][:9])
-    #print("TotalLength:", int.from_bytes(ql.env["FUZZ_DATA"][:9][2:4], byteorder='little'))
     return EFI_SUCCESS
 
 @dxeapi(params = {
@@ -156,13 +153,7 @@ def hook_UsbGetConfigDescriptor(ql, address, params):
 	"InterfaceDescriptor": PTR(VOID)
 })
 def hook_UsbGetInterfaceDescriptor(ql, address, params):
-    #interface_descriptor = InterfaceDescriptor()
-    #ql.mem.write(address, ctypes.byref(interface_descriptor), ctypes.sizeof(interface_descriptor))
-    #random_bytes = bytes([random.randint(3, 10) for _ in range(9)])
-    # print(random_bytes[4])
     check_fuzz_data_len(ql, 18)
-    #data = ql.env["FUZZ_DATA"][9:18]
-    #new_bytes = data[:4] + bytes([0x3]) + data[5:]
     ql.mem.write(params["InterfaceDescriptor"], ql.env["FUZZ_DATA"][9:18])
     return EFI_SUCCESS
 
@@ -173,11 +164,6 @@ def hook_UsbGetInterfaceDescriptor(ql, address, params):
 	"EndpointDescriptor": PTR(VOID)
 })
 def hook_UsbGetEndpointDescriptor(ql, address, params):
-    #random_bytes = bytes([random.randint(0, 255) for _ in range(6)])
-    #byte_array = bytearray([random.randint(0x00, 0xFF) for _ in range(6)])
-    #byte_array[2] = 0x80
-    #byte_array[3] = 0x03
-    #random_bytes = bytes(byte_array)
     endpoint_index = 7 * params["EndpointIndex"]
     check_fuzz_data_len(ql, 25 + endpoint_index)
     data = ql.env["FUZZ_DATA"][18+endpoint_index:25+endpoint_index]

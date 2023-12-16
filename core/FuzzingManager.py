@@ -20,13 +20,10 @@ def start_afl(_ql: Qiling, user_data):
     """
     Callback from inside
     """
-    #print("!"*10, "START AFL")
-
     # NVRAM/UEFIFault
     #(varname, infile) = user_data
     # Fat
     infile = user_data
-    #print(infile)
 
     def place_input_callback_nvram(uc, _input, _, data):
     # """
@@ -35,7 +32,6 @@ def start_afl(_ql: Qiling, user_data):
         _ql.env[varname] = _input
 
     def place_input_callback_fuzz_data(uc, _input, _, data):
-        #print("mutated data", _input.raw)
         _ql.env["FUZZ_DATA"] = _input.raw
         return True
 
@@ -43,30 +39,19 @@ def start_afl(_ql: Qiling, user_data):
         """
         Informs AFL that a certain condition should be treated as a crash.
         """
-        print("!"*10, "AFL VALIDATE CRASH")
-        # print(hex(_ql.arch.regs.arch_pc))
-        if _ql.arch.regs.arch_pc == 0x40000b8:
+        if _ql.arch.regs.arch_pc == 0x0000000000101e2d:
             return False
         if hasattr(_ql.os.heap, "validate"):
-            #print("!"*10, "AFL IS HEAP VALIDATE CRASH")
             if not _ql.os.heap.validate():
-                #print("!!"*10, "AFL HEAP INVALID")
                 # Canary was corrupted
                 verbose_abort(_ql)
                 return True
-        #else:
-            #print("!"*10, "AFL IS NO HEAP VALIDATE CRASH")
         print(hex(_ql.arch.regs.arch_pc))
-        #print(_ql.env["END"])
         if _ql.env["END"]:
             print("IS END FUZZ RUN")
             _ql.env["END"] = False
             return False
-        #print(err)
-        #print(_ql.internal_exception)
-        crash = (_ql.internal_exception is not None) or (
-            err != UC_ERR_OK)
-        print("FUZZ Crash", crash)
+        crash = (_ql.internal_exception is not None) or (err != UC_ERR_OK)
         return crash
 
     # Inject mutated FAT images through this callback
@@ -74,7 +59,6 @@ def start_afl(_ql: Qiling, user_data):
        
     place_input_callback = place_input_callback_fuzz_data
 
-    #print("!"*10, "START AFL BEFORE TRY")
     _ql.env["END"] = False
     try:
         if not _ql.uc.afl_fuzz(input_file=infile,
@@ -83,10 +67,8 @@ def start_afl(_ql: Qiling, user_data):
                                always_validate=True,
                                validate_crash_callback=validate_crash,
                                persistent_iters=10):
-            #print("Dry run completed successfully without AFL attached.")
             os._exit(0)  # that's a looot faster than tidying up.
     except unicornafl.UcAflError as ex:
-        #print("!"*10, "EXCEPT AFL ERROR", ex)
         if ex != unicornafl.UC_AFL_RET_CALLED_TWICE:
             raise
 
@@ -116,13 +98,9 @@ class FuzzingManager(EmulationManager):
     def setup_fuzz_target(self, modules_left):
         if modules_left != 0:
             return False   
-        # UsbMouseDriverBindingStart (from ghidra)
-        #target = self.ql.loader.images[-1].path
-        #pe = pefile.PE(target, fast_load=True)
+
         image_base = self.ql.loader.images[-1].base
-        # mouse 0x21e7 keyboard 0x38a1
-        #address_to_call = image_base + 0x21e7  # 0x800021e7
-        address_to_call = image_base + 0xc89
+        address_to_call = image_base + 0x1a3c
         
         # DiskIo read blocks
         #self.ql.hook_address(address=0x001012a6,
@@ -136,11 +114,11 @@ class FuzzingManager(EmulationManager):
         # 1st arg is fat driver, 2nd is our FakeController handle
         #args = [0x109140, 0x101000]
         # Usb mouse 0x102a3e keyboard 0x10498a
-        #args = [self.ql.loader.entry_point, 0x1]
+        args = [self.ql.loader.entry_point, 0x1]
         
         ### FAT
         # 1st arg is fat driver, 2nd is our FakeController handle
-        args = [0x1078b9, 0x1]
+        #args = [0x1078b9, 0x1]
         
         types = (PARAM_INTN, ) * len(args)
         targs = tuple(zip(types, args))
@@ -149,15 +127,11 @@ class FuzzingManager(EmulationManager):
         
         def __cleanup2(ql: Qiling):
             # Give afl this func's address as fuzzing end
-            print("__cleanup2 VALIDATED:", ql.os.heap.validate())
-            print("!" * 10, "END CLEANUP")
             self.ql.env["END"] = True
             return True
 
         def __cleanup(ql: Qiling):
             # Give afl this func's address as fuzzing end
-            print("__cleanup VALIDATED:", ql.os.heap.validate())
-            print("!" * 10, "END CLEANUP")
             address_to_call2 = image_base + 0x27a1 #0x6e96 # UsbRootHubEnumeration
             # Event, Context
             args2 = [0x04013004, 0x04012f54] # UsbRootHubEnumeration(Event, *Context)
@@ -173,12 +147,9 @@ class FuzzingManager(EmulationManager):
 
         # Call the driver start func and invoke the fuzzer (it's hooked on that address)
         self.ql.os.fcall.call_native(address_to_call, targs, cleanup_trap)
-        print("!"*10, "END FUZZ")
         return True
 
     def fuzz(self, end=None, timeout=0, **kwargs):
-        print("*"*10, "AFL FUZZ START")
-
 	# Fat
         #self.ql.os.on_module_exit.append(self.setup_fuzz_target)
 
